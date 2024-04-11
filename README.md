@@ -23,6 +23,8 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 코드 구현
 ---
 ### [플레이어 이동 구현]
+![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
+Enhanced Input의 Input Action에 키 값 할당</BR>
 ```
 void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 {
