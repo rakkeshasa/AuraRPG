@@ -75,4 +75,8 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 <strong>SetupInputComponent()</strong>에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR></BR>
 <strong>Move()</strong>함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR></BR>
 
+### [Attribute 구현]
+
 ### [투사체 구현]
+
+### [공격 적중 시 피해 입히기]
