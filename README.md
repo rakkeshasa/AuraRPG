@@ -24,7 +24,8 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 ---
 ### [플레이어 이동 구현]
 ![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
-Input Mapping Context에 키 값 설정해주기</BR>
+<div align="center"><strong>Input Mapping Context에 키 값 설정해주기</strong></div></BR>
+
 ```
 void AAuraPlayerController::BeginPlay()
 {
@@ -69,9 +70,9 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 	}
 }
 ```
-C++코드에서 Enhanced Input설정하기</BR>
-BeginPlay()에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다.</BR>
-SetupInputComponent()에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR>
-Move()함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR>
+<div align="center"><strong>C++코드에서 Enhanced Input설정하기</strong></div></BR>
+<strong>BeginPlay()</strong>에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다. 여기서 AuraContext는 InputMappingContext의 TOjbectPtr로 엔진에서 만든 IMC와 연결할 멤버 변수입니다.</BR></BR>
+<strong>SetupInputComponent()</strong>에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR></BR>
+<strong>Move()</strong>함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR></BR>
 
 ### [투사체 구현]
