@@ -15,7 +15,7 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 
 플레이 영상
 ---
-![Video Label](http://img.youtube.com/vi/A2Z_FVkoOV8/0.jpg)
+![Video Label](http://img.youtube.com/vi/A2Z_FVkoOV8/0.jpg)(https://youtu.be/A2Z_FVkoOV8)
 </BR>
 (https://youtu.be/A2Z_FVkoOV8)
 
