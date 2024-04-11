@@ -23,7 +23,7 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 코드 구현
 ---
 ### [플레이어 이동 구현]
-'''
+```
 void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 {
 	// 입력에 따른 이동
@@ -45,4 +45,4 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 		ControlledPawn->AddMovementInput(RightDirection, InputAxisVector.X);
 	}
 }
-'''
+```
