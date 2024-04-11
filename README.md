@@ -26,9 +26,18 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 ![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
 Enhanced Input의 Input Action에 키 값 할당</BR>
 ```
+void AAuraPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+	// UAuraInputComponent 클래스는 UEnhancedInputLocalPlayerSubSystem를 상속함
+	UAuraInputComponent* AuraInputComponent = CastChecked<UAuraInputComponent>(InputComponent);
+	
+	// 이동관련
+	AuraInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAuraPlayerController::Move);
+}
+
 void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 {
-	// 입력에 따른 이동
 	if (GetASC() && GetASC()->HasMatchingGameplayTag(FAuraGameplayTags::Get().Player_Block_InputHeld))
 	{
 		return;
