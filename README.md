@@ -69,9 +69,9 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 	}
 }
 ```
-C++코드에서 Enhanced Input설정하기
-BeginPlay()에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다.
-SetupInputComponent()에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.
-Move()함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.
+C++코드에서 Enhanced Input설정하기</BR>
+BeginPlay()에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다.</BR>
+SetupInputComponent()에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR>
+Move()함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR>
 
 ### [투사체 구현]
