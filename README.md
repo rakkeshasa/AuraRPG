@@ -24,8 +24,20 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 ---
 ### [플레이어 이동 구현]
 ![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
-Enhanced Input의 Input Action에 키 값 할당</BR>
+Input Mapping Context에 키 값 설정해주기</BR>
 ```
+void AAuraPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+	check(AuraContext);
+
+	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	if (Subsystem)
+	{
+		Subsystem->AddMappingContext(AuraContext, 0);
+	}
+}
+
 void AAuraPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -57,3 +69,9 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 	}
 }
 ```
+C++코드에서 Enhanced Input설정하기
+BeginPlay()에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다.
+SetupInputComponent()에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.
+Move()함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.
+
+### [투사체 구현]
