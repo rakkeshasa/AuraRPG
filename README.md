@@ -136,9 +136,13 @@ Attribute 접금자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attri
 <strong>GetLifetimeReplicatedProps()</strong>에서는 Replicated할 Attribute를 등록하여 복제할 프로퍼티 정보를 추가했습니다.</br>
 각 속성마다 <strong>DOREPLIFETIME_CONDITION_NOTIFY()</strong>를 통하여 프로퍼티의 복제 조건과 알림을 설정하였습니다.</br>
 해당 코드에서는 COND_None을 통해 항상 복제가 되도록 하고, REPNOTIFY_Always을 넣어 복제시 항상 서버와 클라에게 알리도록 했습니다.</br></br>
-따라서 체력이나 마나가 변경될 때마다 복제하고 서버와 클라에게 해당 수치가 변경됐다고 알립니다.
+따라서 체력이나 마나가 변경될 때마다 복제하고 서버와 클라에게 해당 수치가 변경됐다고 알립니다.</br></br>
 
 ### [체력 및 마나 UI에 연동시키기]
+
+![체력바](https://github.com/rakkeshasa/AuraRPG/assets/77041622/f24d6b72-9837-4261-9ac3-f7a92bff016f)
+<div align="center"><strong>UserWidget을 상속받아 만든 체력창과 마나창</strong></div></BR></BR>
+
 ```
 UOverlayWidgetController* AAuraHUD::GetOverlayWidgetController(const FWidgetControllerParams& WCParams)
 {
@@ -165,19 +169,66 @@ void AAuraHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySyst
 	const FWidgetControllerParams WidgetControllerParams(PC, PS, ASC, AS); 
 	UOverlayWidgetController* WidgetController = GetOverlayWidgetController(WidgetControllerParams);
 
-	// Overlay위젯에 위젯 컨트롤러 세팅
+	// 위젯에 위젯 컨트롤러 세팅
 	OverlayWidget->SetWidgetController(WidgetController);
 	WidgetController->BroadcastInitialValues();
 
 	Widget->AddToViewport();
 }
 ```
+<div align="center"><strong>위에서 만든 Widget에 WidgetControlloer 연동해주기</strong></div></BR>
+
 <Strong>GetOverlayWidgetController()</strong>에서 HUD에 위젯 컨트롤러가 없으면 생성해주고</BR>
 <Strong>SetWidgetControllerParams()</strong>를 통하여 위젯 컨트롤러에 PlayerController, PlayerState, ASC, AttributeSet을 채워줬습니다.</BR></BR>
+
 <Strong>InitOverlay()</strong>에서는 월드에 위젯을 생성해주고 위젯 컨트롤러에는 4가지 요소를 넣어 생성했습니다.</BR>
-이후 위젯에 위젯 컨트롤러를 연동해주고 위젯 컨트롤러에 필요한 속성 값들을 브로드캐스트하여 세팅했습니다.</BR>
+이후 위젯에 위젯 컨트롤러를 연동해주고 위젯 컨트롤러에 필요한 속성 값들을 브로드캐스트하여 세팅했습니다.</BR></BR>
+<strong>BroadcastInitialValues()</strong>에 자세한 코드는 아래에 있습니다.</BR></BR>
+
+```
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeChangedSignature, float, NewValue);
+
+class AURA_API UOverlayWidgetController : public UAuraWidgetController
+{
+	GENERATED_BODY()
+public:
+	virtual void BroadcastInitialValues() override;
+
+	UPROPERTY(BlueprintAssignable, Category ="GAS|Attributes")
+	FOnAttributeChangedSignature OnHealthChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "GAS|Attributes")
+	FOnAttributeChangedSignature OnMaxHealthChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "GAS|Attributes")
+	FOnAttributeChangedSignature OnManaChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "GAS|Attributes")
+	FOnAttributeChangedSignature OnMaxManaChanged;
+}
+
+void UOverlayWidgetController::BroadcastInitialValues()
+{
+	OnHealthChanged.Broadcast(GetAuraAS()->GetHealth());
+	OnMaxHealthChanged.Broadcast(GetAuraAS()->GetMaxHealth());
+	OnManaChanged.Broadcast(GetAuraAS()->GetMana());
+	OnMaxManaChanged.Broadcast(GetAuraAS()->GetMaxMana());
+}
+```
+<div align="center"><strong>위젯 컨트롤러에 초기 체력 및 마나 세팅해주기</strong></div></BR>
+<strong>OverlayWidgetController</strong>클래스에서 1개의 값만(체력, 마나 등)가지는 다이나믹 델리게이트를 선언했습니다.</BR>
+이후 각각의 Attribute 값이 바뀔 때 호출 될 델리게이트를 생성했습니다.</BR></BR>
+
+<strong>BroadcastInitialValues()</strong>에서는 Attribute마다 델리게이트를 호출하여 현재 값을 브로드캐스트해
+초기 값을 세팅해주도록 했습니다.</BR></BR>
+
+![체력바 블루프린트](https://github.com/rakkeshasa/AuraRPG/assets/77041622/e0896efb-e7aa-454c-b4af-c9710beabd88)
+<div align="center"><strong>C++에서 구현한 함수를 체력창에 적용하는 모습</strong></div></BR>
+
 
 ### [포션 구현]
+
+
 ```
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
 {
