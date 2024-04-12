@@ -225,6 +225,64 @@ void UOverlayWidgetController::BroadcastInitialValues()
 ![체력바 블루프린트](https://github.com/rakkeshasa/AuraRPG/assets/77041622/e0896efb-e7aa-454c-b4af-c9710beabd88)
 <div align="center"><strong>C++에서 구현한 함수를 체력창에 적용하는 모습</strong></div></BR>
 
+구현한 함수들은 맨 처음에 UserWidget기반으로 생성한 체력창과 마나창의 블루프린트에 적용하여 초기세팅을 마쳤습니다.</BR></BR>
+
+```
+UOverlayWidgetController* AAuraHUD::GetOverlayWidgetController(const FWidgetControllerParams& WCParams)
+{
+	if (OverlayWidgetController == nullptr)
+	{
+		OverlayWidgetController = NewObject<UOverlayWidgetController>(this, OverlayWidgetControllerClass);
+		OverlayWidgetController->SetWidgetControllerParams(WCParams);
+		OverlayWidgetController->BindCallbacksToDependencies();
+
+		return OverlayWidgetController;
+	}
+	return OverlayWidgetController;
+}
+
+void UOverlayWidgetController::BindCallbacksToDependencies()
+{
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		GetAuraAS()->GetHealthAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnHealthChanged.Broadcast(Data.NewValue);
+			}
+		);
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		GetAuraAS()->GetMaxHealthAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnMaxHealthChanged.Broadcast(Data.NewValue);
+			}
+	);
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		GetAuraAS()->GetManaAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnManaChanged.Broadcast(Data.NewValue);
+			}
+	);
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		GetAuraAS()->GetMaxManaAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnMaxManaChanged.Broadcast(Data.NewValue);
+			}
+	);
+```
+<div align="center"><strong>Attribute 값이 바뀔 시 브로드캐스트하여 알려주기</strong></div></BR>
+
+<strong>BindCallbacksToDependencies()</strong>함수에서는 Attribute값이 바뀔 때 
+자동으로 호출되는 GetGameplayAttributeValueChangeDelegate()를 이용하였습니다.</br></br>
+
+<strong>GetGameplayAttributeValueChangeDelegate()</strong>는 속성 값이 바뀔 때 자동으로 호출되고 바인딩할 수 있는 대리자를 반환하는 함수입니다.</br></br>
+
+FOnAttributeChangeData에서 변경된 델리게이트의 Attribute값에 바인딩되어 HUD를 업데이트하여 체력창과 마나창에 바뀐 수치에 맞게 체력과 마나가 채워지게 됩니다.</br></br>
 
 ### [포션 구현]
 
