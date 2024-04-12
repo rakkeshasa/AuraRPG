@@ -138,6 +138,45 @@ Attribute 접금자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attri
 해당 코드에서는 COND_None을 통해 항상 복제가 되도록 하고, REPNOTIFY_Always을 넣어 복제시 항상 서버와 클라에게 알리도록 했습니다.</br></br>
 따라서 체력이나 마나가 변경될 때마다 복제하고 서버와 클라에게 해당 수치가 변경됐다고 알립니다.
 
+### [체력 및 마나 UI에 연동시키기]
+```
+UOverlayWidgetController* AAuraHUD::GetOverlayWidgetController(const FWidgetControllerParams& WCParams)
+{
+	if (OverlayWidgetController == nullptr)
+	{
+		OverlayWidgetController = NewObject<UOverlayWidgetController>(this, OverlayWidgetControllerClass);
+		OverlayWidgetController->SetWidgetControllerParams(WCParams);
+		OverlayWidgetController->BindCallbacksToDependencies();
+
+		return OverlayWidgetController;
+	}
+	return OverlayWidgetController;
+}
+
+void AAuraHUD::InitOverlay(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS)
+{
+	checkf(OverlayWidgetClass, TEXT("Overlay Widget Class uninitialized, please fill out BP_AuraHUD"));
+	checkf(OverlayWidgetControllerClass, TEXT("Overlay Widget Controller Class uninitialized, please fill out BP_AuraHUD"));
+
+	UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), OverlayWidgetClass);
+	OverlayWidget = Cast<UAuraUserWidget>(Widget);
+
+	// 위젯 컨트롤러 생성
+	const FWidgetControllerParams WidgetControllerParams(PC, PS, ASC, AS); 
+	UOverlayWidgetController* WidgetController = GetOverlayWidgetController(WidgetControllerParams);
+
+	// Overlay위젯에 위젯 컨트롤러 세팅
+	OverlayWidget->SetWidgetController(WidgetController);
+	WidgetController->BroadcastInitialValues();
+
+	Widget->AddToViewport();
+}
+```
+<Strong>GetOverlayWidgetController()</strong>에서 HUD에 위젯 컨트롤러가 없으면 생성해주고</BR>
+<Strong>SetWidgetControllerParams()</strong>를 통하여 위젯 컨트롤러에 PlayerController, PlayerState, ASC, AttributeSet을 채워줬습니다.</BR></BR>
+<Strong>InitOverlay()</strong>에서는 월드에 위젯을 생성해주고 위젯 컨트롤러에는 4가지 요소를 넣어 생성했습니다.</BR>
+이후 위젯에 위젯 컨트롤러를 연동해주고 위젯 컨트롤러에 필요한 속성 값들을 브로드캐스트하여 세팅했습니다.</BR>
+
 ### [포션 구현]
 ```
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
