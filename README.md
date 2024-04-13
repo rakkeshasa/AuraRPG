@@ -286,11 +286,12 @@ FOnAttributeChangeData에서 변경된 델리게이트의 Attribute값에 바인
 
 ### [포션 구현]
 
+![포션](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d74cde77-78e2-4b77-b1a8-0d8efbbf579b)
+<div align="center"><strong>체력 포션에 적용한 GameEffect</strong></div></BR>
 
 ```
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass)
 {
-	// 태그가 Enemy이거나 Enemy에 적용되는 이펙트가 아니라면 통과
 	if (TargetActor->ActorHasTag(FName("Enemy")) && !bApplyEffectsToEnemies) 
 		return;
 
@@ -307,68 +308,30 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 
 
 	const bool bIsInfinite = EffectSpecHandle.Data.Get()->Def.Get()->DurationPolicy == EGameplayEffectDurationType::Infinite;
-	if (bIsInfinite && InfiniteEffectRemovalPolicy == EEffectRemovalPolicy::RemoveOnOverlap)
-	{
-		ActiveEffectHandles.Add(ActiveEffectHandle, TargetASC);
-	}
-
-	// 무한타입의 이펙트가 아니라면 충돌시 파괴
 	if (!bIsInfinite)
 	{
 		Destroy();
 	}
 }
-
-void AAuraEffectActor::OnOverlap(AActor* TargetActor)
-{
-	if (InstantEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnOverlap)
-	{
-		ApplyEffectToTarget(TargetActor, InstantGameplayEffectClass);
-	}
-
-	if (DurationEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnOverlap)
-	{
-		ApplyEffectToTarget(TargetActor, DurationGameplayEffectClass);
-	}
-
-	if (InfiniteEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnOverlap)
-	{
-		ApplyEffectToTarget(TargetActor, InfiniteGameplayEffectClass);
-	}
-}
-
-void AAuraEffectActor::OnEndOverlap(AActor* TargetActor)
-{
-	if (InstantEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnEndOverlap)
-	{
-		ApplyEffectToTarget(TargetActor, InstantGameplayEffectClass);
-	}
-
-	if (DurationEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnEndOverlap)
-	{
-		ApplyEffectToTarget(TargetActor, DurationGameplayEffectClass);
-	}
-
-	if (InfiniteEffectRemovalPolicy == EEffectRemovalPolicy::RemoveOnOverlap)
-	{
-		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
-		if (!IsValid(TargetASC)) return;
-
-		TArray<FActiveGameplayEffectHandle> HandlesToRemove;
-		for (auto HandlePair : ActiveEffectHandles)
-		{
-			if (TargetASC == HandlePair.Value)
-			{
-				TargetASC->RemoveActiveGameplayEffect(HandlePair.Key, 1);
-				HandlesToRemove.Add(HandlePair.Key);
-			}
-		}
-		for (auto& Handle : HandlesToRemove)
-		{
-			ActiveEffectHandles.FindAndRemoveChecked(Handle);
-		}
-	}
-}
 ```
+<div align="center"><strong>Target에게 Gameplay Effect 적용시키기</strong></div></BR>
+<strong>ApplyEffectToTarget()</strong>에서는 포션이 플레이어와 충돌할 시 Gameplay Effect를 플레이어에게 적용시키게 했습니다.</br></br>
+
+<strong>Gameplay Effect(GE)</strong>는 <strong>GE Context</strong>와 <strong>GE Spec</strong>으로 2가지 데이터로 구성되어 있습니다.</br>
+<strong>Gameplay Ability System(GAS)</strong>는 두 데이터를 직접 제어하는게 아니라 <strong>Handle</strong>을 통해 데이터를 제어합니다.</br></br>
+
+<strong>GE Context</strong>에는 GE가 계산에 필요한 데이터를 갖고 있으며 Instigator(가해자), Causer(가해수단), HitResult(충돌판정)과 같은 정보를 갖고 있습니다. 코드에서는 현재 Actor인 포션을 GameplayEffectContextHandle에 넣어 타겟이 어떤 Actor에게 영향을 받는지 알 수 있게 했습니다.</br></br>
+
+<strong>GE Spec</strong>에는 Level, Modifier, 태그 등 GE에 관한 정보를 답고 있습니다. 코드에서는 영향받을 GE의 클래스와 포션의 레벨과 윗 줄에서 생성한 GE Context Handle을 입력하여 GE Spec을 만들어 GE Spec이 해당 정보를 갖고 있게 했습니다.</br></br>
+
+<strong>ApplyGameplayEffectSpecToSelf()</strong>를 이용하여 GE Spec의 정보 토대로 Target(플레이어)의 ASC에 적용하도록 했습니다.</br>
+마지막에는 GE의 Duration이 Infinite가 아닌 경우에만 Actor가 Destroy()되도록 했습니다. Infinite 타입은 불 장판과 같은 함정에 쓰여 플레이어에게 영향을 주고 함정이 사라지는 것을 방지하기 위해 Infinite 타입을 제외했습니다.</br></br>
+이렇게 함으로써 ASC가 별도의 Gameplay Ability를 발동시키지 않고도 Gameplay Effect를 발동시켜 Target에게 영향을 줄 수 있게 했습니다.</br></br>
+
+![포션 블프](https://github.com/rakkeshasa/AuraRPG/assets/77041622/37b33e80-adfa-49f1-9318-570d3388aeb8)
+<div align="center"><strong>C++로 만든 함수를 블루프린트에 적용해주는 모습</strong></div></BR>
+
+
+
 
 ### [공격 적중 시 피해 입히기]
