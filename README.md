@@ -450,3 +450,45 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 
 
 ### [공격 적중 시 피해 입히기]
+
+
+### [스탯 창에 Attribute 연동하기]
+![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
+<div align="center"><strong>스탯 창에서 1개의 스탯을 담당하는 위젯</strong></div></BR>
+
+```
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAttributeInfoSignature, const FAuraAttributeInfo&, Info);
+
+UPROPERTY(BlueprintAssignable, Category = "GAS|Attributes")
+FAttributeInfoSignature AttributeInfoDelegate;
+
+void UAttributeMenuWidgetController::BroadcastInitialValues()
+{
+	UAuraAttributeSet* AS = CastChecked<UAuraAttributeSet>(AttributeSet);
+	check(AttributeInfo);
+
+	for (auto& Pair : AS->TagsToAttributes)
+	{
+		BroadcastAttributeInfo(Pair.Key, Pair.Value());
+	}
+}
+
+void UAttributeMenuWidgetController::BroadcastAttributeInfo(const FGameplayTag& AttributeTag, const FGameplayAttribute& Attribute) const
+{
+	FAuraAttributeInfo Info = AttributeInfo->FindAttributeInfoForTag(AttributeTag);
+	Info.AttributeValue = Attribute.GetNumericValue(AttributeSet);
+	AttributeInfoDelegate.Broadcast(Info);
+}
+```
+<div align="center"><strong>Tag에 맞는 스탯 갖고와서 브로드캐스트하기</strong></div></BR>
+<strong>FAuraAttributeInfo</strong>구조체에는 AttributeTag, AttributeName, AttributeDescription, AttributeValue 변수가 있습니다.</br></br>
+
+<strong>BroadcastInitialValues()</strong>에서는 스탯 창에 들어갈 Attribute들을 AttributeSet으로부터 가져옵니다.</br>
+TagsToAttributes는 TMap타입의 변수로 키 값은 Attribute에 연결된 태그이며, Value는 해당 Attribute입니다.</br></br>
+
+<strong>BroadcastAttributeInfo()</strong>에서는 Tag이름을 토대로 Attribute를 찾고 AttributeInfo구조체를 가져옵니다.</br>
+AttributeInfo구조체의 AttributeValue변수에 현재 Attribute값을 넘겨주고 브로드캐스트합니다.</br></br>
+
+![스탯 창 블브](https://github.com/rakkeshasa/AuraRPG/assets/77041622/3a850bc6-4da8-4c77-992d-a85cc90aebed)
+<div align="center"><strong>받은 정보 토대로 텍스트 세팅해주기</strong></div></BR>
+AttributeInfoDelegate을 받으면 현재 AttributeInfo에 있는 태그와 스탯 창의 태그가 같은지 체크하고 같다면 스탯 이름과 스탯 값을 세팅해줍니다.</BR>
