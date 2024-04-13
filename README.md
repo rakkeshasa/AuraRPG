@@ -331,7 +331,43 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 ![포션 블프](https://github.com/rakkeshasa/AuraRPG/assets/77041622/37b33e80-adfa-49f1-9318-570d3388aeb8)
 <div align="center"><strong>C++로 만든 함수를 블루프린트에 적용해주는 모습</strong></div></BR>
 
+```
+void UAuraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
 
+	if (Attribute == GetHealthAttribute()) // health 속성인지, ATTRIBUTE_ACCESSOR제공
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
+	}
 
+	if (Attribute == GetManaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+	}
+}
+
+void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		SetHealth(FMath::Clamp(GetHealth(), 0.f, GetMaxHealth()));
+	}
+
+	if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		SetMana(FMath::Clamp(GetMana(), 0.f, GetMaxMana()));
+	}
+}
+```
+<div align="center"><strong>속성이 변경되기 전에 체크해주기</strong></div></BR>
+포션을 먹을 시 최대 수치를 넘어서는 경우가 발생하였는데 이는 속성값이 변경되기 전에 호출되는 <strong>PreAttributeChange()</strong>함수에서 클램핑 하여 처리하였습니다.</BR></BR>
+
+<strong>PostGameplayEffectExecute()</strong>는 Gameplay Effect가 적용 직후에 호출되는 함수입니다.</BR>
+포션을 먹고 바뀐 체력이나 마나량을 클램핑 하여 Set해달라고 요청을 합니다.</BR></BR>
+
+이후 <strong>PreAttributeChange()</strong>에서 바뀐 수치를 한번 더 클램핑하여 체크하고 해당 수치로 Set을 해줍니다.</BR></BR>
 
 ### [공격 적중 시 피해 입히기]
