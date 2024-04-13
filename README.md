@@ -7,9 +7,10 @@ Unreal Engine v5.2를 이용한 RPG게임
 - [간단한 소개](#간단한-소개)
 - [플레이 영상](#플레이-영상)
 - [코드 구현](#코드-구현)
+- [플레이어 이동 구현](#플레이어-이동-구현)
+- 
 
 ## 간단한 소개
----
 
 </BR></BR>
 Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게임입니다.</BR>
@@ -20,15 +21,15 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 </BR></BR>
 
 ## 플레이 영상
----
 [![Video Label](http://img.youtube.com/vi/A2Z_FVkoOV8/0.jpg)](https://youtu.be/A2Z_FVkoOV8)
 </BR>
 👀Link: https://youtu.be/A2Z_FVkoOV8</BR>
 이미지나 주소 클릭하시면 영상을 보실 수 있습니다. </BR>
 
 ## 코드 구현
----
+
 ### [플레이어 이동 구현]
+
 ![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
 <div align="center"><strong>Input Mapping Context에 키 값 설정해주기</strong></div></BR>
 
