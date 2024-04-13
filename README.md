@@ -370,4 +370,83 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 이후 <strong>PreAttributeChange()</strong>에서 바뀐 수치를 한번 더 클램핑하여 체크하고 해당 수치로 Set을 해줍니다.</BR></BR>
 
+### [스탯 시스템]
+![1차 스탯](https://github.com/rakkeshasa/AuraRPG/assets/77041622/298898cd-811e-4fcf-9119-801b2902d433)
+<div align="center"><strong>Gameplay Effect로 기본 스탯 만들어주기</strong></div></BR>
+
+```
+void AAuraCharacterBase::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level) const
+{
+	FGameplayEffectContextHandle ContextHandle = GetAbilitySystemComponent()->MakeEffectContext();
+	ContextHandle.AddSourceObject(this);
+	
+	const FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(GameplayEffectClass, Level, ContextHandle);
+	
+	GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), GetAbilitySystemComponent());
+}
+
+void AAuraCharacterBase::InitializeDefaultAttributes() const
+{
+	ApplyEffectToSelf(DefaultPrimaryAttributes, 1.f);
+	ApplyEffectToSelf(DefaultSecondaryAttributes, 1.f);
+}
+```
+<div align="center"><strong>GE 자기 자신한테 적용하기</strong></div></BR>
+체력과 마나와 같이 기본 스탯을 Attribute로 생성해주고 해당 Attribute를 GE에 세팅을 해줬습니다.</BR></BR>
+<strong>ApplyEffectToSelf()</strong>함수는 AuraCharacterBase클래스에 속해있으므로 AddSourceObject(this)를 통해 Source도 Target도 자기 자신으로 해서 GE에 포함된 Attribute가 자신한테 적용되도록 했습니다.</BR></BR>
+
+![부가 스탯](https://github.com/rakkeshasa/AuraRPG/assets/77041622/5c63adf1-ee0b-4a05-b6c9-750de92a6c0c)
+<div align="center"><strong>1차 스탯에 영향받는 2차 스탯</strong></div></BR>
+MaxHealth와 MasMana를 제외한 2차 스탯의 Attribute는 <strong>Magnitue Calculation Type</strong>을 <strong>Attribute Based</strong>로 설정하여 1차 스탯에 연산을 한 결과값을 가지도록 했습니다.</BR>
+1차 스탯이 바뀌면 2차 스탯이 바뀐 후 계속 유지되어야 하므로 Duration Policy를 <strong>Infinite</strong>로 설정했습니다.</BR></BR>
+
+```
+UMMC_MaxHealth::UMMC_MaxHealth()
+{
+	VigorDef.AttributeToCapture = UAuraAttributeSet::GetVigorAttribute();
+	VigorDef.AttributeSource = EGameplayEffectAttributeCaptureSource::Target;
+	VigorDef.bSnapshot = false;
+
+	RelevantAttributesToCapture.Add(VigorDef);
+}
+
+float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffectSpec& Spec) const
+{
+	const FGameplayTagContainer* SourceTags = Spec.CapturedSourceTags.GetAggregatedTags();
+	const FGameplayTagContainer* TargetTags = Spec.CapturedTargetTags.GetAggregatedTags();
+
+	FAggregatorEvaluateParameters EvaluationParameter;
+	EvaluationParameter.SourceTags = SourceTags;
+	EvaluationParameter.TargetTags = TargetTags;
+
+	float Vigor = 0.f;
+	GetCapturedAttributeMagnitude(VigorDef, Spec, EvaluationParameter, Vigor);
+	Vigor = FMath::Max<float>(Vigor, 0.f);
+
+	int32 PlayerLevel = 1;
+	if (Spec.GetContext().GetSourceObject()->Implements<UCombatInterface>())
+	{
+		PlayerLevel = ICombatInterface::Execute_GetPlayerLevel(Spec.GetContext().GetSourceObject());
+	}
+
+	// 기본 체력 + 2.5활력 + 10레벨
+	return 80.f + (2.5f * Vigor) + (10.f * PlayerLevel);
+}
+```
+<div align="center"><strong>최대 체력과 최대 마나 연산하기</strong></div></BR>
+최대 체력과 최대 마나의 경우에는 1차 스탯뿐만 아니라 플레이어가 레벨업 할 때마다 수치를 늘려주고자 다른 연산 타입을 사용했습니다.</BR>
+최소 2가지 이상의 요소가 Attribute 값을 결정하기에 따로 C++클래스로 만들었습니다.</BR></BR>
+
+생성자에서는 연산에 사용할 Attribute인 Vigor를 VigroDef에 캡쳐합니다.</BR></BR>
+
+<strong>CalculateBaseMagnitude_Implementation()</strong>에서 Source와 Target의 태그를 GE Spec에서 가져와 EvaluationParameter에 세팅해줍니다.</BR></BR>
+
+<strong>GetCapturedAttributeMagnitude()</strong>에 생성자에서 캡처한 Vigor와 GE Spec, EvaluationParameter, Vigor 수치를 넣어 Vigor속성의 값을 가져옵니다.</BR></BR>
+
+이후 Interface에서 플레이어의 레벨을 가져오고 최대 체력 수식을 return하여 플레이어의 레벨과 Vigor의 수치에 맞게 최대 체력이 정해집니다.</BR></BR>
+
+![최대체력](https://github.com/rakkeshasa/AuraRPG/assets/77041622/897db214-3066-4e6f-a24a-03c3daa995df)
+<div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR>
+
+
 ### [공격 적중 시 피해 입히기]
