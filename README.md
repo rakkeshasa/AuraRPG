@@ -131,7 +131,7 @@ void UAuraAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) 
 }
 
 ```
-Attribute 접금자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attribute에 대한 GET함수와 SET함수를 자동으로 생성했습니다.</br></br>
+Attribute 접근자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attribute에 대한 GET함수와 SET함수를 자동으로 생성했습니다.</br></br>
 체력과 마나의 Attribute는 Blueprint읽기 전용과 Replicated속성으로 만듬과 동시에 네트워크 복제시 상응되는 함수가 호출되도록 했습니다.</br></br>
 <strong>GetLifetimeReplicatedProps()</strong>에서는 Replicated할 Attribute를 등록하여 복제할 프로퍼티 정보를 추가했습니다.</br>
 각 속성마다 <strong>DOREPLIFETIME_CONDITION_NOTIFY()</strong>를 통하여 프로퍼티의 복제 조건과 알림을 설정하였습니다.</br>
