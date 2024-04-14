@@ -34,6 +34,11 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 ## 코드 구현
 
 ### [플레이어 이동 구현]
+플레이어 이동을 키보드 방식과 마우스 입력 방식 2가지로 구성하였습니다.</BR>
+키보드 방식은 Enhanced Input을 이용하여 해당 키에 맞는 방향으로 이동합니다.</BR>
+마우스 입력 방식은 마우스가 클릭한 위치를 도착지로 두고 플레이어가 자동으로 이동합니다.</BR></BR>
+
+우선 Enhanced Input을 이용한 키보드 방식부터 살펴보겠습니다.</BR></BR>
 
 ![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
 <div align="center"><strong>Input Mapping Context에 키 값 설정해주기</strong></div></BR>
@@ -86,6 +91,75 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 <strong>BeginPlay()</strong>에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다. 여기서 AuraContext는 InputMappingContext의 TOjbectPtr로 엔진에서 만든 IMC와 연결할 멤버 변수입니다.</BR></BR>
 <strong>SetupInputComponent()</strong>에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR></BR>
 <strong>Move()</strong>함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR></BR>
+
+```
+void AAuraPlayerController::AbilityInputTagHeld(FGameplayTag InputTag)
+{
+	FollowTime += GetWorld()->GetDeltaSeconds();
+
+	if (CursorHit.bBlockingHit)
+		CachedDestination = CursorHit.ImpactPoint;
+
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		const FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
+		ControlledPawn->AddMovementInput(WorldDirection);
+	}
+}
+
+void AAuraPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
+{
+	const APawn* ControlledPawn = GetPawn();
+	if (FollowTime <= ShortPressThreshold && ControlledPawn)
+	{
+		if (UNavigationPath* NavPath = UNavigationSystemV1::FindPathToLocationSynchronously(this, ControlledPawn->GetActorLocation(), CachedDestination))
+		{
+			Spline->ClearSplinePoints(); 
+			for (const FVector& PointLoc : NavPath->PathPoints)
+			{
+				Spline->AddSplinePoint(PointLoc, ESplineCoordinateSpace::World);
+			}
+
+			if (NavPath->PathPoints.Num() > 0) 
+			{
+				CachedDestination = NavPath->PathPoints[NavPath->PathPoints.Num() - 1];
+				bAutoRunning = true;
+			}
+		}
+	}
+	FollowTime = 0.f;
+}
+
+void AAuraPlayerController::AutoRun()
+{
+	if (!bAutoRunning)
+		return;
+
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		const FVector LocationOnSpline = Spline->FindLocationClosestToWorldLocation(ControlledPawn->GetActorLocation(), ESplineCoordinateSpace::World);
+		const FVector Direction = Spline->FindDirectionClosestToWorldLocation(LocationOnSpline, ESplineCoordinateSpace::World);
+		ControlledPawn->AddMovementInput(Direction);
+
+		const float DistanceToDestination = (LocationOnSpline - CachedDestination).Length();
+		if (DistanceToDestination <= AutoRunAcceptanceRadius)
+			bAutoRunning = false;
+
+	}
+}
+```
+<div align="center"><strong>마우스 입력으로 자동 이동하기</strong></div></BR>
+<strong>AbilityInputTagHeld()</strong>는 마우스를 클릭한 위치를 CachedDestination에 저장하고 해당 위치로 Pawn을 이동시키는 역할을 합니다.</BR>
+FollowTime은 마우스 클릭 유지 시간을 체크하며 유지 시간이 ShortPressThreshold보다 작다면 <strong>AbilityInputTagReleased()</strong>에서 경로를 계산해주며, ShortPressThreshold보다 크면 홀딩한 마우스 위치로 Pawn을 이동시킵니다.</BR></BR>
+
+<strong>AbilityInputTagReleased()</strong>에서는 <strong>FindPathToLocationSynchronously()</strong>함수를 이용하여 현재 Pawn의 위치와 마우스로 클릭한 위치까지의 경로를 구해줬습니다.</BR></BR>
+PathPoint는 NavPath에 저장된 경로의 각 지점을 나타내며 각 PathPoint를 Spline에 넣어주고 있습니다.</BR>
+Spline은 USplineComponent타입으로 두 PathPoint를 부드러운 곡선 경로로 표현하여 코너에서 Pawn이 부자연스럽게 회전하는 것을 방지하였습니다.</BR></BR>
+
+bAutoRunning이 true가 되면 <strong>AutoRun()</strong>에서 Pawn에서 가장 가까운 Spline까지의 위치와 방향벡터를 구하여 해당 방향으로 Pawn이 움직이게 합니다.</BR>
+Pawn이 각 Spline에 도달할 때 마다 목적지인 CachedDestination까지 가까워지며 목적지에 어느정도 가까워지면 더 이상 자동 이동을 안하도록 bAutoRunning을 false로 바꿉니다.</BR></BR>
+
+
 
 ### [체력 및 마나 구현]
 ```
