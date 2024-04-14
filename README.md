@@ -162,7 +162,6 @@ bAutoRunning이 true가 되면 <strong>AutoRun()</strong>에서 Pawn에서 가�
 Pawn이 각 Spline에 도달할 때 마다 목적지인 CachedDestination까지 가까워지며 목적지에 어느정도 가까워지면 더 이상 자동 이동을 안하도록 bAutoRunning을 false로 바꿉니다.</BR></BR>
 
 
-
 ### [체력 및 마나 구현]
 ```
 class AURA_API UAuraAttributeSet : public UAttributeSet
@@ -225,6 +224,7 @@ Attribute 접근자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attri
 각 속성마다 <strong>DOREPLIFETIME_CONDITION_NOTIFY()</strong>를 통하여 프로퍼티의 복제 조건과 알림을 설정하였습니다.</br>
 해당 코드에서는 COND_None을 통해 항상 복제가 되도록 하고, REPNOTIFY_Always을 넣어 복제시 항상 서버와 클라에게 알리도록 했습니다.</br></br>
 따라서 체력이나 마나가 변경될 때마다 복제하고 서버와 클라에게 해당 수치가 변경됐다고 알립니다.</br></br>
+
 
 ### [체력 및 마나 UI에 연동시키기]
 
@@ -372,6 +372,7 @@ void UOverlayWidgetController::BindCallbacksToDependencies()
 
 FOnAttributeChangeData에서 변경된 델리게이트의 Attribute값에 바인딩되어 HUD를 업데이트하여 체력창과 마나창에 바뀐 수치에 맞게 체력과 마나가 채워지게 됩니다.</br></br>
 
+
 ### [포션 구현]
 
 ![포션](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d74cde77-78e2-4b77-b1a8-0d8efbbf579b)
@@ -458,6 +459,7 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 이후 <strong>PreAttributeChange()</strong>에서 바뀐 수치를 한번 더 클램핑하여 체크하고 해당 수치로 Set을 해줍니다.</BR></BR>
 
+
 ### [스탯 시스템]
 ![1차 스탯](https://github.com/rakkeshasa/AuraRPG/assets/77041622/298898cd-811e-4fcf-9119-801b2902d433)
 <div align="center"><strong>Gameplay Effect로 기본 스탯 만들어주기</strong></div></BR>
@@ -534,7 +536,7 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 이후 Interface에서 플레이어의 레벨을 가져오고 최대 체력 수식을 return하여 플레이어의 레벨과 Vigor의 수치에 맞게 최대 체력이 정해집니다.</BR></BR>
 
 ![최대체력](https://github.com/rakkeshasa/AuraRPG/assets/77041622/897db214-3066-4e6f-a24a-03c3daa995df)
-<div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR>
+<div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR></BR>
 
 
 ### [FireBolt 스킬 구현]
@@ -587,7 +589,8 @@ FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래
 그 중 <Strong>PlayMontageAndWait</Strong>노드를 사용하여 애니메이션 재생이 끝나면 GA가 끝나도록 하였습니다.</BR></BR>
 
 애니메이션이 재생하는 도중에 AnimNotify를 통해 Tag를 보냈으며, 해당 Tag를 WaitGameplayEvent노드가 받으면 C++로 구현한 SpawnProjectile()을 이용하여 투사체가 소환됩니다.</BR>
-따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.
+따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.</BR></BR>
+
 
 ### [데미지 주기]
 
@@ -681,6 +684,7 @@ FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const 
 <strong>ApplyDamageEffect()</strong>에서는 GE Context Handle과 GE Spec Handle을 DamageEffectParams구조체 정보 기반으로 생성하여 ASC가 GE에 접근할 수 있도록 해줍니다.</BR></BR>
 
 <strong>AssignTagSetByCallerMagnitude()</strong>을 사용하여 Spec에 데미지 타입과 데미지 수치 정보를 넣어주고, 맞은 Actor의 ASC는 Spec정보 기반으로 GameEffect를 자기 자신한테 적용합니다.</BR></BR>
+
 
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
