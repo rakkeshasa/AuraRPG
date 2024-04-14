@@ -535,8 +535,48 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 <div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR>
 
 
-### [공격 적중 시 피해 입히기]
+### [FireBolt 스킬]
 
+
+```
+void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocation, const FGameplayTag& SocketTag, bool bOverridePitch, float PitchOverride)
+{
+	const FVector SocketLocation = ICombatInterface::Execute_GetCombatSocketLocation(
+		GetAvatarActorFromActorInfo(),
+		SocketTag);
+	FRotator Rotation = (ProjectileTargetLocation - SocketLocation).Rotation();
+
+	FTransform SpawnTransform;
+	SpawnTransform.SetLocation(SocketLocation);
+	SpawnTransform.SetRotation(Rotation.Quaternion());
+
+	AAuraProjectile* Projectile = GetWorld()->SpawnActorDeferred<AAuraProjectile>(
+		ProjectileClass,
+		SpawnTransform,
+		GetOwningActorFromActorInfo(),
+		Cast<APawn>(GetOwningActorFromActorInfo()),
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	
+	Projectile->DamageEffectParams = MakeDamageEffectParamsFromClassDefaults();
+
+	Projectile->FinishSpawning(SpawnTransform);
+}
+```
+<div align="center"><strong>투사체 소환시키기</strong></div></BR>
+<strong>SpawnProjectile()</strong>은 투사체를 소환시키는 함수로 FireBolt스킬에 쓰일 불덩이를 소환하는데 사용됩니다.</br></br>
+
+우선 불덩이가 플레이어의 지팡이에서 나갈 수 있도록 지팡이의 위치를 구하고 나아갈 방향을 구합니다.</br>
+이후 <strong>SpawnActorDeferred()</strong>을 이용하여 해당 투사체의 인스턴스를 생성합니다.</br></br>
+
+<strong>ProjectileClass</strong>에는 불덩이 클래스가 들어갈 것이며 이는 엔진상에서 BP_FireBolt로 만들었습니다.</br>
+<strong>SpawnTransform</strong>에는 위에서 구한 지팡이의 위치와 나아갈 방향이 들어있습니다.</br></br>
+
+생성이 완료된 후 투사체가 부딪히면 피해를 입히기 위해 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>함수를 데미지를 계산하여 투사체의 DamageEffectParamas에 정보를 넣어줍니다.</br></br>
+
+<strong>FinishSpawning()</strong>을 호출하여 투사체를 월드에서 지정된 위치에 소환합니다.</br></br>
+
+![FireBolt](https://github.com/rakkeshasa/AuraRPG/assets/77041622/f5c65931-cb2a-4465-94e1-fc7d2d43a905)
+<div align="center"><strong>스킬 모션 중 AnimNotify로 이벤트를 받은 후 SpawnProjectile호출</strong></div></BR>
 
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
