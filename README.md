@@ -12,6 +12,8 @@ Unreal Engine v5.2를 이용한 RPG게임
   * [체력 및 마나 UI에 연동시키기](#체력-및-마나-UI에-연동시키기)
   * [포션 구현](#포션-구현)
   * [스탯 시스템](#스탯-시스템)
+  * [FireBolt 스킬 구현](#FireBolt-스킬-구현)
+  * [데미지 주기](#데미지-주기)
   * [스탯 창에 Attribute 연동하기](#스탯-창에-Attribute-연동하기)
 
 
@@ -589,43 +591,13 @@ FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래
 
 ### [데미지 주기]
 
-```
-void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (!IsValidOverlap(OtherActor)) return;
-	if (!bHit) OnHit();
+1차적으로 투사체가 소환될때 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>를 통하여 FDamageEffectParams 구조체에 변수가 채워지는데
+해당 구조체 내에 있는 GameplayEffect클래스의 변수가 ExecCalc_Damage클래스로 세팅이 되어있습니다.</br></br>
 
-	if (HasAuthority())
-	{
-		if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
-		{
-			DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
-			UAuraAbilitySystemLibrary::ApplyDamageEffect(DamageEffectParams);
-		}
-		Destroy();
-	}
-	else
-		bHit = true;
-}
+ExecCalc_Damage클래스는 투사체가 입힐 데미지를 계산하는 클래스입니다.</br></br>
 
-FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const FDamageEffectParams& DamageEffectParams)
-{
-	const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
-	const AActor* SourceAvatarActor = DamageEffectParams.SourceAbilitySystemComponent->GetAvatarActor();
-
-	FGameplayEffectContextHandle EffectContexthandle = DamageEffectParams.SourceAbilitySystemComponent->MakeEffectContext();
-	EffectContexthandle.AddSourceObject(SourceAvatarActor);
-
-	const FGameplayEffectSpecHandle SpecHandle = DamageEffectParams.SourceAbilitySystemComponent->MakeOutgoingSpec(DamageEffectParams.DamageGameplayEffectClass, DamageEffectParams.AbilityLevel, EffectContexthandle);
-
-	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DamageEffectParams.DamageType, DamageEffectParams.BaseDamage);
-
-	DamageEffectParams.TargetAbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
-	return EffectContexthandle;
-}
-```
-<div align="center"><strong>투사체 충돌 시 데미지 주기</strong></div></BR>
-
+데미지는 부가 스탯인 방어력 관통, 방어력, 치명타 확률, 치명타 데미지 등으로 계산이 되며, 투사체는 이러한 정보를 갖고 있다가
+물체와 부딪혀 OnSphereOverlap()함수가 호출되면 데미지를 줍니다.</br></br>
 
 ```
 void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, 
@@ -642,18 +614,13 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 		// 해당 공격의 데미지
 		float DamageTypeValue = Spec.GetSetByCallerMagnitude(Pair.Key, false);
 		
-		// 데미지가 0이면 continue해서 최적화해주기
 		if (DamageTypeValue <= 0.f)
-		{
 			continue;
-		}
 
-		// 저항 수치 알아내기
 		float Resistance = 0.f;
 		ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(CaptureDef, EvaluationParameters, Resistance);
 		Resistance = FMath::Clamp(Resistance, 0.f, 100.f);
 
-		// 저항 수치 만큼 데미지 감소
 		DamageTypeValue *= (100.f - Resistance) / 100.f;
 		Damage += DamageTypeValue;
 	}
@@ -662,56 +629,58 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().BlockChanceDef, EvaluationParameters, TargetBlockChance);
 	TargetBlockChance = FMath::Max<float>(TargetBlockChance, 0.f);
 
-	// 공격을 막으면 데미지의 절반만 피해 입음
 	const bool bBlocked = FMath::RandRange(1, 100) < TargetBlockChance;
 	Damage = bBlocked ? Damage / 2.f : Damage;
-
-	float TargetArmor = 0.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().ArmorDef, EvaluationParameters, TargetArmor);
-	TargetArmor = FMath::Max<float>(TargetArmor, 0.f);
-
-	float SourceArmorPenetration = 0.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().ArmorPenetrationDef, EvaluationParameters, SourceArmorPenetration);
-	SourceArmorPenetration = FMath::Max<float>(SourceArmorPenetration, 0.f);
-
-	// 캐릭터 클래스 인포에 있는 데이터 에셋(데미지효율) 사용하기
-	const UCharacterClassInfo* CharacterClassInfo = UAuraAbilitySystemLibrary::GetCharacterClassInfo(SourceAvatar);
-	const FRealCurve* ArmorPenetrationCurve = CharacterClassInfo->DamageCalculationCoefficients->FindCurve(FName("ArmorPenetration"), FString());
-	// 방관 레벨 가져오기
-	const float ArmorPenetrationCoefficient = ArmorPenetrationCurve->Eval(SourcePlayerLevel);
-	const float EffectiveArmor = TargetArmor * (100 - SourceArmorPenetration * ArmorPenetrationCoefficient) / 100.f;
-
-	const FRealCurve* EffectiveArmorCurve = CharacterClassInfo->DamageCalculationCoefficients->FindCurve(FName("EffectiveArmor"), FString());
-	const float EffectiveArmorCoefficient = EffectiveArmorCurve->Eval(TargetPlayerLevel);
-	Damage *= (100 - EffectiveArmor * EffectiveArmorCoefficient) / 100.f;
-
-
-	float SourceCriticalHitChance = 0.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().CriticalHitChanceDef, EvaluationParameters, SourceCriticalHitChance);
-	SourceCriticalHitChance = FMath::Max<float>(SourceCriticalHitChance, 0.f);
-
-	float TargetCriticalHitResistance = 0.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().CriticalHitResistanceDef, EvaluationParameters, TargetCriticalHitResistance);
-	TargetCriticalHitResistance = FMath::Max<float>(TargetCriticalHitResistance, 0.f);
-
-	float SourceCriticalHitDamage = 0.f;
-	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().CriticalHitDamageDef, EvaluationParameters, SourceCriticalHitDamage);
-	SourceCriticalHitDamage = FMath::Max<float>(SourceCriticalHitDamage, 0.f);
-
-	const FRealCurve* CriticalHitResistanceCurve = CharacterClassInfo->DamageCalculationCoefficients->FindCurve(FName("CriticalHitResistance"), FString());
-	const float CriticalHitResistanceCoefficient = CriticalHitResistanceCurve->Eval(TargetPlayerLevel);
-
-	// 치저는 치명 확률을 줄임
-	const float EffectiveCriticalHitChance = SourceCriticalHitChance - TargetCriticalHitResistance * CriticalHitResistanceCoefficient;
-	const bool bCriticalHit = FMath::RandRange(1, 100) < EffectiveCriticalHitChance;
-
-	// 크리시 데미지 2배
-	Damage = bCriticalHit ? 2.f * Damage + SourceCriticalHitDamage : Damage;
-
-	const FGameplayModifierEvaluatedData EvaluatedData(UAuraAttributeSet::GetIncomingDamageAttribute(), EGameplayModOp::Additive, Damage);
-	OutExecutionOutput.AddOutputModifier(EvaluatedData);
 }
 ```
+<div align="center"><strong>투사체가 입힐 데미지를 계산하는 클래스</strong></div></BR>
+
+데미지는 해당 공격이 물리 공격, 마법 공격에 따라 기본 저항치가 다릅니다.</BR></BR>
+
+우선 해당 공격 타입의 데미지를 GE Spec에서 GetSetByCallerMagnitude()를 통해 수치를 얻어옵니다.</BR></BR>
+
+저항 수치를 AttemptCalculateCapturedAttributeMagnitude()를 통해 얻어옵니다. 들어가는 매개변수 중 CaptureDef는 Map타입의 TagsToCaputreDefs변수에서 해당 공격 타입을 Key로 하여 해당 타입의 저항치를 Value로 얻어옵니다.</BR></BR>
+
+얻어온 저항치는 Resistance에 넣어주고 0~100사이의 수로 클램핑해주고 해당 퍼센트만큼 데미지를 빼줍니다.</BR></BR>
+
+이후 부가 스탯인 TargetBlockChance의 속성값을 구해 막히면 위에서 구해준 데미지에서 절반을 빼주고, 막히지 않으면 본래 데미지를 줍니다.</BR></BR>
+
+```
+void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!IsValidOverlap(OtherActor)) return;
+
+	if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
+	{
+		DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
+		UAuraAbilitySystemLibrary::ApplyDamageEffect(DamageEffectParams);
+	}
+	Destroy();
+}
+
+FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const FDamageEffectParams& DamageEffectParams)
+{
+	const AActor* SourceAvatarActor = DamageEffectParams.SourceAbilitySystemComponent->GetAvatarActor();
+
+	FGameplayEffectContextHandle EffectContexthandle = DamageEffectParams.SourceAbilitySystemComponent->MakeEffectContext();
+	EffectContexthandle.AddSourceObject(SourceAvatarActor);
+
+	const FGameplayEffectSpecHandle SpecHandle = DamageEffectParams.SourceAbilitySystemComponent->MakeOutgoingSpec(DamageEffectParams.DamageGameplayEffectClass, DamageEffectParams.AbilityLevel, EffectContexthandle);
+
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DamageEffectParams.DamageType, DamageEffectParams.BaseDamage);
+
+	DamageEffectParams.TargetAbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return EffectContexthandle;
+}
+```
+<div align="center"><strong>투사체 충돌 시 데미지 주기</strong></div></BR>
+스킬로 날린 투사체가 물체에 부딪히면 <strong>OnSphereOverlap()</strong>함수가 호출됩니다.</BR></BR>
+
+투사체를 날린 Actor가 맞으면 return하고 다른 Actor가 맞았다면 상대의 ASC를 데미지 관련 정보가 들어있는 DamageEffectParams 구조체에 넣고 해당 구조체를 ApplyDamageEffect()에 넣어 호출합니다.
+
+<strong>ApplyDamageEffect()</strong>에서는 GE Context Handle과 GE Spec Handle을 DamageEffectParams구조체 정보 기반으로 생성하여 ASC가 GE에 접근할 수 있도록 해줍니다.</BR></BR>
+
+<strong>AssignTagSetByCallerMagnitude()</strong>을 사용하여 Spec에 데미지 타입과 데미지 수치 정보를 넣어주고, 맞은 Actor의 ASC는 Spec정보 기반으로 GameEffect를 자기 자신한테 적용합니다.</BR></BR>
 
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
