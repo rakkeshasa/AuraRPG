@@ -535,7 +535,7 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 <div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR>
 
 
-### [FireBolt 스킬]
+### [FireBolt 스킬 구현]
 
 ![불덩이](https://github.com/rakkeshasa/AuraRPG/assets/77041622/313f66b1-658f-4efa-be34-925ec0a91f7e)
 <div align="center"><strong>FireBolt스킬에 쓸 투사체인 불덩이</strong></div></BR>
@@ -585,6 +585,94 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 
 애니메이션이 재생하는 도중에 AnimNotify를 통해 Tag를 보냈으며, 해당 Tag를 WaitGameplayEvent노드가 받으면 C++로 구현한 SpawnProjectile()을 이용하여 투사체가 소환됩니다.</BR>
 따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.
+
+### [데미지 주기]
+
+```
+void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, 
+	FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
+{
+	float Damage = 0.f;
+	for (const TTuple<FGameplayTag, FGameplayTag>& Pair : FAuraGameplayTags::Get().DamageTypesToResistances)
+	{
+		const FGameplayTag DamageTypeTag = Pair.Key; // 데미지 타입(Damage.Fire)
+		const FGameplayTag ResistanceTag = Pair.Value; // 데미지 저항(Attributes.Resistance.Fire
+
+		const FGameplayEffectAttributeCaptureDefinition CaptureDef = TagsToCaptureDefs[ResistanceTag];
+
+		// 해당 공격의 데미지
+		float DamageTypeValue = Spec.GetSetByCallerMagnitude(Pair.Key, false);
+		
+		// 데미지가 0이면 continue해서 최적화해주기
+		if (DamageTypeValue <= 0.f)
+		{
+			continue;
+		}
+
+		// 저항 수치 알아내기
+		float Resistance = 0.f;
+		ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(CaptureDef, EvaluationParameters, Resistance);
+		Resistance = FMath::Clamp(Resistance, 0.f, 100.f);
+
+		// 저항 수치 만큼 데미지 감소
+		DamageTypeValue *= (100.f - Resistance) / 100.f;
+		Damage += DamageTypeValue;
+	}
+
+	float TargetBlockChance = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().BlockChanceDef, EvaluationParameters, TargetBlockChance);
+	TargetBlockChance = FMath::Max<float>(TargetBlockChance, 0.f);
+
+	// 공격을 막으면 데미지의 절반만 피해 입음
+	const bool bBlocked = FMath::RandRange(1, 100) < TargetBlockChance;
+	Damage = bBlocked ? Damage / 2.f : Damage;
+
+	float TargetArmor = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().ArmorDef, EvaluationParameters, TargetArmor);
+	TargetArmor = FMath::Max<float>(TargetArmor, 0.f);
+
+	float SourceArmorPenetration = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().ArmorPenetrationDef, EvaluationParameters, SourceArmorPenetration);
+	SourceArmorPenetration = FMath::Max<float>(SourceArmorPenetration, 0.f);
+
+	// 캐릭터 클래스 인포에 있는 데이터 에셋(데미지효율) 사용하기
+	const UCharacterClassInfo* CharacterClassInfo = UAuraAbilitySystemLibrary::GetCharacterClassInfo(SourceAvatar);
+	const FRealCurve* ArmorPenetrationCurve = CharacterClassInfo->DamageCalculationCoefficients->FindCurve(FName("ArmorPenetration"), FString());
+	// 방관 레벨 가져오기
+	const float ArmorPenetrationCoefficient = ArmorPenetrationCurve->Eval(SourcePlayerLevel);
+	const float EffectiveArmor = TargetArmor * (100 - SourceArmorPenetration * ArmorPenetrationCoefficient) / 100.f;
+
+	const FRealCurve* EffectiveArmorCurve = CharacterClassInfo->DamageCalculationCoefficients->FindCurve(FName("EffectiveArmor"), FString());
+	const float EffectiveArmorCoefficient = EffectiveArmorCurve->Eval(TargetPlayerLevel);
+	Damage *= (100 - EffectiveArmor * EffectiveArmorCoefficient) / 100.f;
+
+
+	float SourceCriticalHitChance = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().CriticalHitChanceDef, EvaluationParameters, SourceCriticalHitChance);
+	SourceCriticalHitChance = FMath::Max<float>(SourceCriticalHitChance, 0.f);
+
+	float TargetCriticalHitResistance = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().CriticalHitResistanceDef, EvaluationParameters, TargetCriticalHitResistance);
+	TargetCriticalHitResistance = FMath::Max<float>(TargetCriticalHitResistance, 0.f);
+
+	float SourceCriticalHitDamage = 0.f;
+	ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(DamageStatics().CriticalHitDamageDef, EvaluationParameters, SourceCriticalHitDamage);
+	SourceCriticalHitDamage = FMath::Max<float>(SourceCriticalHitDamage, 0.f);
+
+	const FRealCurve* CriticalHitResistanceCurve = CharacterClassInfo->DamageCalculationCoefficients->FindCurve(FName("CriticalHitResistance"), FString());
+	const float CriticalHitResistanceCoefficient = CriticalHitResistanceCurve->Eval(TargetPlayerLevel);
+
+	// 치저는 치명 확률을 줄임
+	const float EffectiveCriticalHitChance = SourceCriticalHitChance - TargetCriticalHitResistance * CriticalHitResistanceCoefficient;
+	const bool bCriticalHit = FMath::RandRange(1, 100) < EffectiveCriticalHitChance;
+
+	// 크리시 데미지 2배
+	Damage = bCriticalHit ? 2.f * Damage + SourceCriticalHitDamage : Damage;
+
+	const FGameplayModifierEvaluatedData EvaluatedData(UAuraAttributeSet::GetIncomingDamageAttribute(), EGameplayModOp::Additive, Damage);
+	OutExecutionOutput.AddOutputModifier(EvaluatedData);
+}
+```
 
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
