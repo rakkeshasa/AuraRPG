@@ -537,6 +537,9 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 
 ### [FireBolt 스킬]
 
+![불덩이](https://github.com/rakkeshasa/AuraRPG/assets/77041622/313f66b1-658f-4efa-be34-925ec0a91f7e)
+<div align="center"><strong>FireBolt스킬에 쓸 투사체인 불덩이</strong></div></BR>
+
 
 ```
 void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocation, const FGameplayTag& SocketTag, bool bOverridePitch, float PitchOverride)
@@ -577,6 +580,11 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 
 ![FireBolt](https://github.com/rakkeshasa/AuraRPG/assets/77041622/f5c65931-cb2a-4465-94e1-fc7d2d43a905)
 <div align="center"><strong>스킬 모션 중 AnimNotify로 이벤트를 받은 후 SpawnProjectile호출</strong></div></BR>
+액티브 스킬들은 애니메이션을 재생하기 때문에 딜레이가 있습니다. 따라서 액티브 스킬인 GA(Gameplay Ability)는 1프레임 내에 실행되고 끝나지 않기 때문에 Ability Task(AT)를 활용했습니다.</BR>
+그 중 <Strong>PlayMontageAndWait</Strong>노드를 사용하여 애니메이션 재생이 끝나면 GA가 끝나도록 하였습니다.</BR></BR>
+
+애니메이션이 재생하는 도중에 AnimNotify를 통해 Tag를 보냈으며, 해당 Tag를 WaitGameplayEvent노드가 받으면 C++로 구현한 SpawnProjectile()을 이용하여 투사체가 소환됩니다.</BR>
+따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.
 
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
