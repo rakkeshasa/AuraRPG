@@ -574,7 +574,8 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 <strong>ProjectileClass</strong>에는 불덩이 클래스가 들어갈 것이며 이는 엔진상에서 BP_FireBolt로 만들었습니다.</br>
 <strong>SpawnTransform</strong>에는 위에서 구한 지팡이의 위치와 나아갈 방향이 들어있습니다.</br></br>
 
-생성이 완료된 후 투사체가 부딪히면 피해를 입히기 위해 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>함수를 데미지를 계산하여 투사체의 DamageEffectParamas에 정보를 넣어줍니다.</br></br>
+생성이 완료된 후 투사체가 데미지관련 정보를 위해 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>함수를 통하여 FDamageEffectParams 구조체의 변수에 값을 채우고 해당 구조체를 return합니다.</br>
+FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래스, SourceASC, TargetASC, Damage등의 변수가 있습니다.</br></br>
 
 <strong>FinishSpawning()</strong>을 호출하여 투사체를 월드에서 지정된 위치에 소환합니다.</br></br>
 
@@ -587,6 +588,55 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.
 
 ### [데미지 주기]
+
+```
+void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!IsValidOverlap(OtherActor)) return;
+	if (!bHit) OnHit();
+
+	if (HasAuthority())
+	{
+		if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
+		{
+			DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
+			UAuraAbilitySystemLibrary::ApplyDamageEffect(DamageEffectParams);
+		}
+		Destroy();
+	}
+	else
+		bHit = true;
+}
+
+FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const FDamageEffectParams& DamageEffectParams)
+{
+	const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
+	const AActor* SourceAvatarActor = DamageEffectParams.SourceAbilitySystemComponent->GetAvatarActor();
+
+	FGameplayEffectContextHandle EffectContexthandle = DamageEffectParams.SourceAbilitySystemComponent->MakeEffectContext();
+	EffectContexthandle.AddSourceObject(SourceAvatarActor);
+
+	const FGameplayEffectSpecHandle SpecHandle = DamageEffectParams.SourceAbilitySystemComponent->MakeOutgoingSpec(DamageEffectParams.DamageGameplayEffectClass, DamageEffectParams.AbilityLevel, EffectContexthandle);
+
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(SpecHandle, DamageEffectParams.DamageType, DamageEffectParams.BaseDamage);
+
+	DamageEffectParams.TargetAbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+	return EffectContexthandle;
+}
+
+void UAuraDamageGameplayAbility::CauseDamage(AActor* TargetActor)
+{
+	FGameplayEffectSpecHandle DamageSpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, 1.f);
+	
+	const float ScaledDamage = Damage.GetValueAtLevel(GetAbilityLevel());
+	UAbilitySystemBlueprintLibrary::AssignTagSetByCallerMagnitude(DamageSpecHandle, DamageType, ScaledDamage);
+
+	// Target에게 GameplayEffect 적용하기
+	GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*DamageSpecHandle.Data.Get(), UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor));
+}
+```
+<div align="center"><strong>투사체 충돌 시 데미지 주기</strong></div></BR>
+
 
 ```
 void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, 
