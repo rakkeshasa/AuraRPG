@@ -591,6 +591,23 @@ FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래
 애니메이션이 재생하는 도중에 AnimNotify를 통해 Tag를 보냈으며, 해당 Tag를 WaitGameplayEvent노드가 받으면 C++로 구현한 SpawnProjectile()을 이용하여 투사체가 소환됩니다.</BR>
 따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.</BR></BR>
 
+### [전기 스킬]
+```
+void UAuraBeamSpell::StoreMouseDataInfo(const FHitResult& HitResult)
+{
+	// 무언가 맞았다면
+	if (HitResult.bBlockingHit)
+	{
+		// 마우스 위치와 해당 위치의 액터 저장
+		MouseHitLocation = HitResult.ImpactPoint;
+		MouseHitActor = HitResult.GetActor();
+	}
+	else
+	{
+		CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+	}
+}
+```
 
 ### [데미지 주기]
 
@@ -808,7 +825,6 @@ DeltaLevelRequirement변수는 바뀐 레벨의 경험치 통의 크기를 구�
 <div align="center"><strong>받은 퍼센트를 경험치 바에 적용하는 모습</strong></div></BR></BR>
 
 
-### [전기 스킬]
 
 ### [Arcane Shard]
 
