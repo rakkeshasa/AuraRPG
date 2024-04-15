@@ -689,6 +689,43 @@ FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const 
 ### [경험치 구현하기]
 
 ```
+void UAuraAttributeSet::SendXPEvent(const FEffectProperties& Props)
+{
+	if (Props.TargetCharacter->Implements<UCombatInterface>())
+	{
+		const int32 TargetLevel = ICombatInterface::Execute_GetPlayerLevel(Props.TargetCharacter);
+		const ECharacterClass TargetClass = ICombatInterface::Execute_GetCharacterClass(Props.TargetCharacter);
+		const int32 XPReward = UAuraAbilitySystemLibrary::GetXPRewardForClassAndLevel(Props.TargetCharacter, TargetClass, TargetLevel);
+
+		const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
+		FGameplayEventData Payload;
+		Payload.EventTag = GameplayTags.Attributes_Meta_IncomingXP;
+		Payload.EventMagnitude = XPReward;
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Props.SourceCharacter, GameplayTags.Attributes_Meta_IncomingXP, Payload);
+	}
+}
+```
+<div align="center"><strong>몬스터가 죽으면 Gameplay Event 발생시키기</strong></div></BR>
+<strong>SendXPEvent()</strong>함수는 몬스터가 죽으면 발동되는 함수로 몬스터의 타입과 레벨을 구하여 해당 정보 토대로 XP수치를 구해옵니다.</BR></BR>
+
+XP수치를 구할 때 사용하는 <strong>GetXPRewardForClassAndLevel()</strong>함수는 몬스터 타입(근거리, 원거리, 마법사)마다 주어진 XP를 찾아서 return해줍니다.</BR>
+Payload에는 이벤트에 사용할 정보들인 태그와 XP수치를 넣어 Gameplay Event가 발생하면 사용할 수 있게 합니다.</BR>
+<strong>SendGameplayEventToActor()</strong>함수를 이용하여 XP를 받는 쪽으로 이벤트를 발생시킬 Tag와 Payload를 담아 Gameplay Event를 보냅니다. </BR></BR>
+
+![경험치 블프1](https://github.com/rakkeshasa/AuraRPG/assets/77041622/a1e6a82c-86d9-43c2-a2e6-9d8b0c3efd51)
+<div align="center"><strong>Gameplay Event받아오기</strong></div></BR>
+WaitGameplayEvent노드를 이용하여 'Attributes'태그를 루트로 하는 하위 태그들이 올 때 Gameplay Event를 받습니다.</BR>
+C++코드에서는 'Attributes_Meta_IncomingXP'로 태그를 넘겨줬기 때문에 해당 태그는 Attributes의 자식 태그이므로 Gameplay Event가 발생합니다.</BR></BR>
+
+MakeOutgoingSpec노드를 이용하여 XP속성이 담긴 GE를 조작할 수 있도록 해줍니다.</BR></BR>
+
+![경험치 블프2](https://github.com/rakkeshasa/AuraRPG/assets/77041622/df71c5e8-2215-4585-b55a-ebcaad92dc2e)
+<div align="center"><strong>Gameplay Event받아오기</strong></div></BR>
+XP속성의 Magnitude계산 타입은 'Set by Caller'로 계산을 하여 수치를 구하는게 아니라 해당 속성에 넣어준 값만큼 받아서 연산을 해줍니다.</BR>
+AssignTagSetbyCallerMagnitude노드를 사용하여 XP속성 값에 몬스터를 잡고 넘어온 XP값을 넘겨주고 GE에서는 넘어온 XP값만큼 더하여 ApplyGameEffectSpecToSelf노드를 이용하여 자신한테 해당 GE를 적용시켜줍니다.</BR></BR>
+
+```
 void AAuraPlayerState::AddToXP(int32 InXP)
 {
 	XP += InXP;
@@ -768,30 +805,7 @@ void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& Props)
 		IPlayerInterface::Execute_AddToXP(Props.SourceCharacter, LocalIncomingXP);
 	}
 }
-
-void UAuraAttributeSet::SendXPEvent(const FEffectProperties& Props)
-{
-	if (Props.TargetCharacter->Implements<UCombatInterface>())
-	{
-		const int32 TargetLevel = ICombatInterface::Execute_GetPlayerLevel(Props.TargetCharacter);
-		const ECharacterClass TargetClass = ICombatInterface::Execute_GetCharacterClass(Props.TargetCharacter);
-		const int32 XPReward = UAuraAbilitySystemLibrary::GetXPRewardForClassAndLevel(Props.TargetCharacter, TargetClass, TargetLevel);
-
-		const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
-		FGameplayEventData Payload;
-		Payload.EventTag = GameplayTags.Attributes_Meta_IncomingXP;
-		Payload.EventMagnitude = XPReward;
-
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Props.SourceCharacter, GameplayTags.Attributes_Meta_IncomingXP, Payload);
-	}
-}
 ```
-<strong>SendXPEvent()</strong>함수는 몬스터가 죽으면 발동되는 함수로 몬스터의 타입과 레벨을 구하여 해당 정보 토대로 XP수치를 구해옵니다.</BR></BR>
-
-XP수치를 구할 때 사용하는 <strong>GetXPRewardForClassAndLevel()</strong>함수는 몬스터 타입(근거리, 원거리, 마법사)마다 주어진 XP를 찾아서 return해줍니다.</BR>
-Payload에는 이벤트에 사용할 정보들인 태그와 XP수치를 넣어 Gameplay Event가 발생하면 사용할 수 있게 합니다.</BR>
-<strong>SendGameplayEventToActor()</strong>함수를 이용하여 XP를 받는 쪽으로 이벤트를 발생시킬 Tag와 Payload를 담아 Gameplay Event를 보냅니다. </BR>
-
 
 ### [전기 스킬]
 
