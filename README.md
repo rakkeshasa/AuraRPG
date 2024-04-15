@@ -721,70 +721,27 @@ C++코드에서는 'Attributes_Meta_IncomingXP'로 태그를 넘겨줬기 때문
 MakeOutgoingSpec노드를 이용하여 XP속성이 담긴 GE를 조작할 수 있도록 해줍니다.</BR></BR>
 
 ![경험치 블프2](https://github.com/rakkeshasa/AuraRPG/assets/77041622/df71c5e8-2215-4585-b55a-ebcaad92dc2e)
-<div align="center"><strong>Gameplay Event받아오기</strong></div></BR>
-XP속성의 Magnitude계산 타입은 'Set by Caller'로 계산을 하여 수치를 구하는게 아니라 해당 속성에 넣어준 값만큼 받아서 연산을 해줍니다.</BR>
+<div align="center"><strong>받은 이벤트 토대로 자기 자신한테 GE적용해주기</strong></div></BR>
+XP속성의 Magnitude계산 타입은 'Set by Caller'로 계산을 하여 수치를 구하는게 아니라 해당 속성에 넣어준 값만큼 받아서 연산을 해줍니다.</BR></BR>
 AssignTagSetbyCallerMagnitude노드를 사용하여 XP속성 값에 몬스터를 잡고 넘어온 XP값을 넘겨주고 GE에서는 넘어온 XP값만큼 더하여 ApplyGameEffectSpecToSelf노드를 이용하여 자신한테 해당 GE를 적용시켜줍니다.</BR></BR>
 
 ```
-void AAuraPlayerState::AddToXP(int32 InXP)
-{
-	XP += InXP;
-	OnXPChangedDelegate.Broadcast(XP);
-}
-
-void AAuraPlayerState::SetXP(int32 InXP)
-{
-	XP = InXP;
-	OnXPChangedDelegate.Broadcast(XP);
-}
-
-void UOverlayWidgetController::OnXPChanged(int32 NewXP)
-{
-	// OnXPChangedDelegate에 바인딩된 함수
-
-	const ULevelUpInfo* LevelUpInfo = GetAuraPS()->LevelUpInfo;
-	const int32 Level = LevelUpInfo->FindLevelForXP(NewXP);
-	const int32 MaxLevel = LevelUpInfo->LevelUpInformation.Num();
-
-	// 정상적인 레벨 범주 내라면
-	if (Level <= MaxLevel && Level > 0)
-	{
-		const int32 LevelUpRequirement = LevelUpInfo->LevelUpInformation[Level].LevelUpRequirement;
-		const int32 PreviousLevelUpRequirement = LevelUpInfo->LevelUpInformation[Level - 1].LevelUpRequirement;
-
-		// 현재 레벨에 맞는 경험치 통의 크기(301 ~ 600 -> 600 - 300)
-		const int32 DeltaLevelRequirement = LevelUpRequirement - PreviousLevelUpRequirement;
-		
-		// 현재 경험치에서 지난 레벨 경험치 통 빼기(450 - 300 = 150)
-		const int32 XPForThisLevel = NewXP - PreviousLevelUpRequirement;
-		const float XPBarPercent = static_cast<float>(XPForThisLevel) / static_cast<float>(DeltaLevelRequirement);
-
-		OnXPPercentChangedDelegate.Broadcast(XPBarPercent);
-	}
-}
-
 void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& Props)
 {
-	// PostGameplayEffectExecute()함수에서 호출되므로 GE가 적용된 이후에 불려지는 함수
-
-	const float LocalIncomingXP = GetIncomingXP(); // Attribute 매크로
+	const float LocalIncomingXP = GetIncomingXP();
 	SetIncomingXP(0.f);
 
-	// GA_ListenForEvents는 GE_EventBasedEffect를 적용하여 IncomingXp에 추가하기 때문에
-	// SourceCharacter는 owner이다.
 	if (Props.SourceCharacter->Implements<UPlayerInterface>() && Props.SourceCharacter->Implements<UCombatInterface>())
 	{
 		const int32 CurrentLevel = ICombatInterface::Execute_GetPlayerLevel(Props.SourceCharacter);
 		const int32 CurrentXP = IPlayerInterface::Execute_GetXP(Props.SourceCharacter);
 
 		const int32 NewLevel = IPlayerInterface::Execute_FindLevelForXP(Props.SourceCharacter, CurrentXP + LocalIncomingXP);
-		// 몇 번 레벨업 해야하는지
 		const int32 NumLevelUps = NewLevel - CurrentLevel;
 		if (NumLevelUps > 0)
 		{
 			IPlayerInterface::Execute_AddToPlayerLevel(Props.SourceCharacter, NumLevelUps);
 
-			// 대량의 경험치 획득시 레벨업한 만큼 포인트 지급하도록 for문 사용
 			int32 AttributePointsReward = 0;
 			int32 SpellPointsReward = 0;
 			for (int32 i = 0; i < NumLevelUps; ++i)
@@ -805,7 +762,51 @@ void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& Props)
 		IPlayerInterface::Execute_AddToXP(Props.SourceCharacter, LocalIncomingXP);
 	}
 }
+
+void AAuraPlayerState::AddToXP(int32 InXP)
+{
+	XP += InXP;
+	OnXPChangedDelegate.Broadcast(XP);
+}
 ```
+<div align="center"><strong>XP속성을 가지는 GE가 적용된 후에 호출되는 함수</strong></div></BR>
+
+<strong>HandleIncomingXP()</strong>는 PostGameplayEffectExecute()에서 호출되는 함수로 위에서 언급한 XP속성 값이 바뀌는 GE를 적용 후에 호출됩니다.</BR></BR>
+현재 레벨과 XP를 구해온 뒤 현재XP에 몬스터를 잡고 얻은 XP를 더해준 XP값의 총량을 계산하여 현재 XP값의 총량이 어느 레벨인지 계산해줍니다.</BR>
+새롭게 구한 레벨과 현재 레벨을 빼서 얼마만큼 레벨을 올려야하는지 구한 후 올려야하는 레벨 만큼 스탯 포인트, 스킬 포인트를 올리고 모든 자원(체력, 마나)를 회복시켜줍니다.</BR>
+이후에는 레벨업과 XP를 증가시키면서 연결된 델리게이트인 OnLevelChangedDelegate와 OnXPChangedDelegate를 브로드캐스팅합니다.</BR></BR>
+
+```
+void UOverlayWidgetController::OnXPChanged(int32 NewXP)
+{
+	const ULevelUpInfo* LevelUpInfo = GetAuraPS()->LevelUpInfo;
+	const int32 Level = LevelUpInfo->FindLevelForXP(NewXP);
+	const int32 MaxLevel = LevelUpInfo->LevelUpInformation.Num();
+
+	if (Level <= MaxLevel && Level > 0)
+	{
+		const int32 LevelUpRequirement = LevelUpInfo->LevelUpInformation[Level].LevelUpRequirement;
+		const int32 PreviousLevelUpRequirement = LevelUpInfo->LevelUpInformation[Level - 1].LevelUpRequirement;
+
+		// 현재 레벨에 맞는 경험치 통의 크기(301 ~ 600 -> 600 - 300)
+		const int32 DeltaLevelRequirement = LevelUpRequirement - PreviousLevelUpRequirement;
+		
+		// 현재 경험치에서 지난 레벨 경험치 통 빼기(450 - 300 = 150)
+		const int32 XPForThisLevel = NewXP - PreviousLevelUpRequirement;
+		const float XPBarPercent = static_cast<float>(XPForThisLevel) / static_cast<float>(DeltaLevelRequirement);
+
+		OnXPPercentChangedDelegate.Broadcast(XPBarPercent);
+	}
+}
+```
+<div align="center"><strong>OnXPChangedDelegate와 바인딩 된 함수</strong></div></BR>
+XP가 바뀌면 UI상에서 레벨을 올려주고 경험치 바를 변경해주기 위해 브로드캐스팅합니다.</BR>
+DeltaLevelRequirement변수는 바뀐 레벨의 경험치 통의 크기를 구하고, XPForThisLevel변수는 바뀐 XP총량에서 이전 레벨까지의 경험치 통의 총량을 빼서 현재 레벨에서 얼마만큼의 XP를 채웠는지를 나타냅니다.</BR>
+현재 레벨에서 채운 XP/현재 레벨의 경험치 통을 연산하여 경험치 바에 나타낼 퍼센트를 구해 브로드캐스팅해줍니다.</BR></BR>
+
+![경험치 통](https://github.com/rakkeshasa/AuraRPG/assets/77041622/4b33bcde-b6a6-4d9a-91dc-441be8e52b01)
+<div align="center"><strong>받은 퍼센트를 경험치 바에 적용하는 모습</strong></div></BR></BR>
+
 
 ### [전기 스킬]
 
