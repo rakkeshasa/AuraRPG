@@ -688,6 +688,111 @@ FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const 
 
 ### [경험치 구현하기]
 
+```
+void AAuraPlayerState::AddToXP(int32 InXP)
+{
+	XP += InXP;
+	OnXPChangedDelegate.Broadcast(XP);
+}
+
+void AAuraPlayerState::SetXP(int32 InXP)
+{
+	XP = InXP;
+	OnXPChangedDelegate.Broadcast(XP);
+}
+
+void UOverlayWidgetController::OnXPChanged(int32 NewXP)
+{
+	// OnXPChangedDelegate에 바인딩된 함수
+
+	const ULevelUpInfo* LevelUpInfo = GetAuraPS()->LevelUpInfo;
+	const int32 Level = LevelUpInfo->FindLevelForXP(NewXP);
+	const int32 MaxLevel = LevelUpInfo->LevelUpInformation.Num();
+
+	// 정상적인 레벨 범주 내라면
+	if (Level <= MaxLevel && Level > 0)
+	{
+		const int32 LevelUpRequirement = LevelUpInfo->LevelUpInformation[Level].LevelUpRequirement;
+		const int32 PreviousLevelUpRequirement = LevelUpInfo->LevelUpInformation[Level - 1].LevelUpRequirement;
+
+		// 현재 레벨에 맞는 경험치 통의 크기(301 ~ 600 -> 600 - 300)
+		const int32 DeltaLevelRequirement = LevelUpRequirement - PreviousLevelUpRequirement;
+		
+		// 현재 경험치에서 지난 레벨 경험치 통 빼기(450 - 300 = 150)
+		const int32 XPForThisLevel = NewXP - PreviousLevelUpRequirement;
+		const float XPBarPercent = static_cast<float>(XPForThisLevel) / static_cast<float>(DeltaLevelRequirement);
+
+		OnXPPercentChangedDelegate.Broadcast(XPBarPercent);
+	}
+}
+
+void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& Props)
+{
+	// PostGameplayEffectExecute()함수에서 호출되므로 GE가 적용된 이후에 불려지는 함수
+
+	const float LocalIncomingXP = GetIncomingXP(); // Attribute 매크로
+	SetIncomingXP(0.f);
+
+	// GA_ListenForEvents는 GE_EventBasedEffect를 적용하여 IncomingXp에 추가하기 때문에
+	// SourceCharacter는 owner이다.
+	if (Props.SourceCharacter->Implements<UPlayerInterface>() && Props.SourceCharacter->Implements<UCombatInterface>())
+	{
+		const int32 CurrentLevel = ICombatInterface::Execute_GetPlayerLevel(Props.SourceCharacter);
+		const int32 CurrentXP = IPlayerInterface::Execute_GetXP(Props.SourceCharacter);
+
+		const int32 NewLevel = IPlayerInterface::Execute_FindLevelForXP(Props.SourceCharacter, CurrentXP + LocalIncomingXP);
+		// 몇 번 레벨업 해야하는지
+		const int32 NumLevelUps = NewLevel - CurrentLevel;
+		if (NumLevelUps > 0)
+		{
+			IPlayerInterface::Execute_AddToPlayerLevel(Props.SourceCharacter, NumLevelUps);
+
+			// 대량의 경험치 획득시 레벨업한 만큼 포인트 지급하도록 for문 사용
+			int32 AttributePointsReward = 0;
+			int32 SpellPointsReward = 0;
+			for (int32 i = 0; i < NumLevelUps; ++i)
+			{
+				SpellPointsReward += IPlayerInterface::Execute_GetSpellPointsReward(Props.SourceCharacter, CurrentLevel + i);
+				AttributePointsReward += IPlayerInterface::Execute_GetAttributePointsReward(Props.SourceCharacter, CurrentLevel + i);
+			}
+
+			IPlayerInterface::Execute_AddToAttributePoints(Props.SourceCharacter, AttributePointsReward);
+			IPlayerInterface::Execute_AddToSpellPoints(Props.SourceCharacter, SpellPointsReward);
+
+			bTopOffHealth = true;
+			bTopOffMana = true;
+
+			IPlayerInterface::Execute_LevelUp(Props.SourceCharacter);
+		}
+
+		IPlayerInterface::Execute_AddToXP(Props.SourceCharacter, LocalIncomingXP);
+	}
+}
+
+void UAuraAttributeSet::SendXPEvent(const FEffectProperties& Props)
+{
+	if (Props.TargetCharacter->Implements<UCombatInterface>())
+	{
+		const int32 TargetLevel = ICombatInterface::Execute_GetPlayerLevel(Props.TargetCharacter);
+		const ECharacterClass TargetClass = ICombatInterface::Execute_GetCharacterClass(Props.TargetCharacter);
+		const int32 XPReward = UAuraAbilitySystemLibrary::GetXPRewardForClassAndLevel(Props.TargetCharacter, TargetClass, TargetLevel);
+
+		const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
+		FGameplayEventData Payload;
+		Payload.EventTag = GameplayTags.Attributes_Meta_IncomingXP;
+		Payload.EventMagnitude = XPReward;
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Props.SourceCharacter, GameplayTags.Attributes_Meta_IncomingXP, Payload);
+	}
+}
+```
+<strong>SendXPEvent()</strong>함수는 몬스터가 죽으면 발동되는 함수로 몬스터의 타입과 레벨을 구하여 해당 정보 토대로 XP수치를 구해옵니다.</BR></BR>
+
+XP수치를 구할 때 사용하는 <strong>GetXPRewardForClassAndLevel()</strong>함수는 몬스터 타입(근거리, 원거리, 마법사)마다 주어진 XP를 찾아서 return해줍니다.</BR>
+Payload에는 이벤트에 사용할 정보들인 태그와 XP수치를 넣어 Gameplay Event가 발생하면 사용할 수 있게 합니다.</BR>
+<strong>SendGameplayEventToActor()</strong>함수를 이용하여 XP를 받는 쪽으로 이벤트를 발생시킬 Tag와 Payload를 담아 Gameplay Event를 보냅니다. </BR>
+
+
 ### [전기 스킬]
 
 ### [Arcane Shard]
