@@ -687,6 +687,67 @@ Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖
 Actor가 CombatInterface를 가질 경우 Actor의 위치를 구해 전기가 Actor에게 붙게 했습니다.</BR></BR>
 
 ### [Arcane Shard]
+마지막 Arcane Shard 스킬은 바닥에서 커다란 마법 조각이 솟아올라 데미지를 주는 스킬입니다.</BR>
+Arcane Shard스킬에 스킬 포인트를 투자하여 스킬을 강화할 경우 소환되는 마법 조각의 개수가 증가합니다.</BR></BR>
+
+![ArcaneShard](https://github.com/rakkeshasa/AuraRPG/assets/77041622/e379e54a-16d2-4c6e-8fc0-68ab77bd69a6)
+<div align="center"><strong>강화된 Arcane Shard스킬</strong></div></BR>
+Arcane Shard는 랜덤한 위치에서 여러개가 나타나는 것이 아닌 위치가 정해진 포인트에서 소환되는 형태입니다.</BR>
+제일 처음 소환되는 마법 조각이 첫 번째 포인트라면 그 이후 소환되는 마법 조각들은 미리 위치를 지정한 포인트에서 소환됩니다.</BR></BR>
+
+![point](https://github.com/rakkeshasa/AuraRPG/assets/77041622/7bfd8546-2a4a-49a8-b8aa-e66767c47980)
+<div align="center"><strong>미리 지정해놓은 포인트 위치</strong></div></BR></BR>
+
+```
+TArray<USceneComponent*> APointCollection::GetGroundPoints(const FVector& GroundLocation, int32 NumPoints, float YawOverride)
+{
+	TArray<USceneComponent*> ArrayCopy;
+
+	for (USceneComponent* Pt : ImmutablePts)
+	{
+		if (Pt != Pt_0)
+		{
+			FVector ToPoint = Pt->GetComponentLocation() - Pt_0->GetComponentLocation();
+			ToPoint = ToPoint.RotateAngleAxis(YawOverride, FVector::UpVector);
+			Pt->SetWorldLocation(Pt_0->GetComponentLocation() + ToPoint);
+		}
+
+		const FVector RaisedLocation = FVector(Pt->GetComponentLocation().X, Pt->GetComponentLocation().Y, Pt->GetComponentLocation().Z + 500.f);
+		const FVector LoweredLocation = FVector(Pt->GetComponentLocation().X, Pt->GetComponentLocation().Y, Pt->GetComponentLocation().Z - 500.f);
+
+		FHitResult HitResult;
+		TArray<AActor*> IgnoreActors;
+		UAuraAbilitySystemLibrary::GetLivePlayersWithinRadius(this, 
+			IgnoreActors, 
+			TArray<AActor*>(), 
+			1500.f, 
+			GetActorLocation());
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActors(IgnoreActors);
+		GetWorld()->LineTraceSingleByProfile(HitResult, RaisedLocation, LoweredLocation, FName("BlockAll"), QueryParams);
+
+		const FVector AdjustedLocation = FVector(Pt->GetComponentLocation().X, Pt->GetComponentLocation().Y, HitResult.ImpactPoint.Z);
+		Pt->SetWorldLocation(AdjustedLocation);
+		Pt->SetWorldRotation(UKismetMathLibrary::MakeRotFromZ(HitResult.ImpactNormal));
+
+		ArrayCopy.Add(Pt);
+	}
+	return ArrayCopy;
+}
+```
+<div align="center"><strong>마법 조각들이 소환될 포인트의 위치 계산해주기</strong></div></BR>
+
+<strong>GetGroundPoints()</strong>는 미리 지정한 포인트를 첫번째 소환된 포인트 위치에서 거리와 방향을 계산하여 소환할 위치를 알려줍니다.</br></br>
+
+ImmutablePts는 미리 지정한 포인트로 총 10개의 포인트를 지정했으며, 최대 10개의 조각이 소환될 수 있습니다.</br>
+ImmutablePts를 순회하면서 제일 첫번째 소환 포인트인 PT_0가 아니라면 포인트의 위치를 다음 포인트로 세팅해줍니다.</br></br>
+
+마법 조각들은 지면에서 생성 되기 때문에 지면에 경사가 있을 경우를 대비하여 경사가 낮은 곳과 경사가 높은 곳을 미리 지정합니다.</br>
+또한 마법 조각들이 지면이 아닌 Actor의 머리 위에 소환되면 안되기 때문에 GetLivePlayersWithinRadius()함수를 통하여 CombatInterface를 가지고 있는 Actor를 충돌테스트에서 제외시켜줍니다.</br>
+
+LineTraceSingleByProfile()함수를 사용하여 지면과의 충돌 테스트를 진행한 후 해당 지면의 높이를 구하여 땅바닥의 높이(z축)를 구해 포인트의 위치를 조정합니다.</br>
+포인트의 위치를 땅바닥으로 해주고, 솟아나는 방향을 땅바닥의 노말 벡터를 구하여 마법 조각이 무조건 하늘로 향하는 것이 아니라 바닥의 수직 방향에서 솟아오르도록 했습니다.</br></br>
 
 
 
