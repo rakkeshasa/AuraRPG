@@ -15,6 +15,9 @@ Unreal Engine v5.2를 이용한 RPG게임
   * [FireBolt 스킬 구현](#FireBolt-스킬-구현)
   * [데미지 주기](#데미지-주기)
   * [스탯 창에 Attribute 연동하기](#스탯-창에-Attribute-연동하기)
+ 
+- [사용한 플러그인](#사용한-플러그인)
+- [Reference](#Reference)
 
 
 ## 간단한 소개
@@ -1031,4 +1034,5 @@ Enhanced Input을 사용하기 위해 적용했습니다.</BR>
 로딩 화면 UI에 MVVM모델을 적용하기 위해 플러그인을 사용했습니다.</BR></BR>
 
 ## Reference
-
+[Github GAS Document](https://github.com/tranek/GASDocumentation)</br></br>
+[이득우의 언리얼 프로그래밍](https://www.inflearn.com/course/%EC%9D%B4%EB%93%9D%EC%9A%B0-%EC%96%B8%EB%A6%AC%EC%96%BC-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-part-4)
