@@ -12,8 +12,11 @@ Unreal Engine v5.2를 이용한 RPG게임
   * [체력 및 마나 UI에 연동시키기](#체력-및-마나-UI에-연동시키기)
   * [포션 구현](#포션-구현)
   * [스탯 시스템](#스탯-시스템)
-  * [FireBolt 스킬 구현](#FireBolt-스킬-구현)
+  * [FireBolt 스킬](#FireBolt-스킬)
+  * [Electrocute 스킬](#Electrocute-스킬)
+  * [Arcane Shard 스킬](#Arcane-Shard-스킬)
   * [데미지 주기](#데미지-주기)
+  * [경험치 시스템](#경험치-시스템)
   * [스탯 창에 Attribute 연동하기](#스탯-창에-Attribute-연동하기)
  
 - [사용한 플러그인](#사용한-플러그인)
@@ -542,7 +545,7 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 <div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR></BR>
 
 
-### [FireBolt 스킬 구현]
+### [FireBolt 스킬]
 
 ![불덩이](https://github.com/rakkeshasa/AuraRPG/assets/77041622/313f66b1-658f-4efa-be34-925ec0a91f7e)
 <div align="center"><strong>FireBolt스킬에 쓸 투사체인 불덩이</strong></div></BR>
@@ -689,7 +692,7 @@ Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖
 함수에서 구해준 위치와 Actor를 Electorcute스킬의 GameplayCue파라미터로 만들어 GameplayCue에서 전기 이펙트를 생성할때 입력받은 위치까지 전기가 나가게 하고 
 Actor가 CombatInterface를 가질 경우 Actor의 위치를 구해 전기가 Actor에게 붙게 했습니다.</BR></BR>
 
-### [Arcane Shard]
+### [Arcane Shard 스킬]
 마지막 Arcane Shard 스킬은 바닥에서 커다란 마법 조각이 솟아올라 데미지를 주는 스킬입니다.</BR>
 Arcane Shard스킬에 스킬 포인트를 투자하여 스킬을 강화할 경우 소환되는 마법 조각의 개수가 증가합니다.</BR></BR>
 
@@ -848,7 +851,7 @@ FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const 
 <strong>AssignTagSetByCallerMagnitude()</strong>을 사용하여 Spec에 데미지 타입과 데미지 수치 정보를 넣어주고, 맞은 Actor의 ASC는 Spec정보 기반으로 GameEffect를 자기 자신한테 적용합니다.</BR></BR>
 
 
-### [경험치 구현하기]
+### [경험치 시스템]
 
 ```
 void UAuraAttributeSet::SendXPEvent(const FEffectProperties& Props)
@@ -970,10 +973,6 @@ DeltaLevelRequirement변수는 바뀐 레벨의 경험치 통의 크기를 구�
 <div align="center"><strong>받은 퍼센트를 경험치 바에 적용하는 모습</strong></div></BR></BR>
 
 
-### [세이브 시스템]
-
-
-
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
 <div align="center"><strong>스탯 창에서 1개의 스탯을 담당하는 위젯</strong></div></BR>
@@ -1013,7 +1012,7 @@ AttributeInfo구조체의 AttributeValue변수에 현재 Attribute값을 넘겨�
 
 ![스탯 창 블브](https://github.com/rakkeshasa/AuraRPG/assets/77041622/3a850bc6-4da8-4c77-992d-a85cc90aebed)
 <div align="center"><strong>받은 정보 토대로 텍스트 세팅해주기</strong></div></BR>
-AttributeInfoDelegate을 받으면 현재 AttributeInfo에 있는 태그와 스탯 창의 태그가 같은지 체크하고 같다면 스탯 이름과 스탯 값을 세팅해줍니다.</BR>
+AttributeInfoDelegate을 받으면 현재 AttributeInfo에 있는 태그와 스탯 창의 태그가 같은지 체크하고 같다면 스탯 이름과 스탯 값을 세팅해줍니다.</BR></BR>
 
 
 ## 사용한 플러그인
