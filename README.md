@@ -679,7 +679,7 @@ Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖
 
 <strong>GetClosestTargets()</strong>함수에서는 OutOverlappingActors 배열에 있는 Actor들을 순회하면서 첫 타격 대상과의 거리를 비교하면서 제일 가까이 있는 타격 대상을 OutAdditionalTargets배열에 넣어줍니다.</BR></BR>
 
-연쇄 번개 대상이 여러명이면 가장 가까운 대상을 구하고 OutOverlappingActors 배열에서 해당 대상을 뺀 후 다시 가장 가까운 대상을 구합니다.</BR>
+연쇄 번개 대상이 여러명이면 가장 가까운 대상을 구하고 OutOverlappingActors 배열에서 해당 대상을 뺀 후 다시 가장 가까운 대상을 구합니다.</BR></BR>
 
 
 ### [데미지 주기]
