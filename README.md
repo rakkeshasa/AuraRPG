@@ -591,23 +591,96 @@ FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래
 애니메이션이 재생하는 도중에 AnimNotify를 통해 Tag를 보냈으며, 해당 Tag를 WaitGameplayEvent노드가 받으면 C++로 구현한 SpawnProjectile()을 이용하여 투사체가 소환됩니다.</BR>
 따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.</BR></BR>
 
-### [전기 스킬]
+### [연쇄 번개 스킬]
+![electrocute](https://github.com/rakkeshasa/AuraRPG/assets/77041622/4c35c530-9d95-4239-ae38-e931dc6498ba)
+<div align="center"><strong>마우스 위치에 빔을 쏘는 스킬</strong></div></BR>
+
 ```
-void UAuraBeamSpell::StoreMouseDataInfo(const FHitResult& HitResult)
+void UAuraBeamSpell::TraceFirstTarget(const FVector& BeamTargetLocation)
 {
-	// 무언가 맞았다면
-	if (HitResult.bBlockingHit)
+	if (OwnerCharacter->Implements<UCombatInterface>())
 	{
-		// 마우스 위치와 해당 위치의 액터 저장
-		MouseHitLocation = HitResult.ImpactPoint;
-		MouseHitActor = HitResult.GetActor();
-	}
-	else
-	{
-		CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+		if (USkeletalMeshComponent* Weapon = ICombatInterface::Execute_GetWeapon(OwnerCharacter))
+		{
+			TArray<AActor*> ActorsToIgnore;
+			ActorsToIgnore.Add(OwnerCharacter);
+
+			FHitResult HitResult;
+			const FVector SocketLocation = Weapon->GetSocketLocation(FName("TipSocket"));
+
+			UKismetSystemLibrary::SphereTraceSingle(OwnerCharacter, SocketLocation, BeamTargetLocation,
+				10.f, TraceTypeQuery1, false, ActorsToIgnore, EDrawDebugTrace::None, HitResult, true);
+
+			if (HitResult.bBlockingHit)
+			{
+				MouseHitLocation = HitResult.ImpactPoint;
+				MouseHitActor = HitResult.GetActor();
+			}
+		}
 	}
 }
 ```
+<div align="center"><strong>마우스 위치와 Actor구하기</strong></div></BR>
+<strong>TraceFirstTarget()</strong>는 마우스 위치를 입력으로 받고 지팡이에서 마우스까지 <strong>SphereTraceSingle()</strong>를 통해 충돌 검사를 합니다.</br>
+충돌 검사 결과는 HitResult에 들어가게 되고 충돌하게 된 경우에는 해당 위치와 위치에 있는 Actor를 저장합니다.</br></br>
+
+```
+void UAuraBeamSpell::StoreAdditionalTargets(TArray<AActor*>& OutAdditionalTargets)
+{
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(GetAvatarActorFromActorInfo());
+	ActorsToIgnore.Add(MouseHitActor);
+
+	TArray<AActor*> OverlappingActors;
+	UAuraAbilitySystemLibrary::GetLivePlayersWithinRadius(
+		GetAvatarActorFromActorInfo(),
+		OverlappingActors,
+		ActorsToIgnore,
+		850.f,
+		MouseHitActor->GetActorLocation());
+
+	int32 NumAdditionalTargets = FMath::Min(GetAbilityLevel() - 1, MaxNumShockTargets);
+
+	UAuraAbilitySystemLibrary::GetClosestTargets(
+		NumAdditionalTargets, 
+		OverlappingActors, 
+		OutAdditionalTargets, 
+		MouseHitActor->GetActorLocation());
+}
+
+void UAuraAbilitySystemLibrary::GetLivePlayersWithinRadius(const UObject* WorldContextObject,
+	TArray<AActor*>& OutOverlappingActors, const TArray<AActor*>& ActorsToIgnore, 
+	float Radius, const FVector& SphereOrigin)
+{
+	FCollisionQueryParams SphereParams;
+	SphereParams.AddIgnoredActors(ActorsToIgnore);
+
+	if (const UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
+	{
+		TArray<FOverlapResult> Overlaps;
+		World->OverlapMultiByObjectType(Overlaps, SphereOrigin, FQuat::Identity, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects), FCollisionShape::MakeSphere(Radius), SphereParams);
+
+		for (FOverlapResult& Overlap : Overlaps)
+		{
+			if (Overlap.GetActor()->Implements<UCombatInterface>() && !ICombatInterface::Execute_IsDead(Overlap.GetActor()))
+			{
+				OutOverlappingActors.AddUnique(ICombatInterface::Execute_GetAvatar(Overlap.GetActor()));
+			}
+		}
+	}
+}
+```
+<div align="center"><strong>첫 타격 대상의 주변 대상 찾기</strong></div></BR>
+연쇄 번개 스킬은 레벨업을 하면 타격하는 대상 수가 늘어납니다.</BR></BR> 
+
+연쇄 번개를 맞는 대상은 우선 첫 타격 대상에서 범위 내에 있어야 하며, 그 중 가장 가까이 있는 대상에게 연쇄 번개가 나갑니다.</BR> 
+<strong>GetLivePlayersWithinRadius()</strong>함수에서 OverlapMultiByObjectType()를 사용하여 연쇄 번개 범위 내에 있는 오브젝트를 찾은 후 Overlaps에 저장합니다.</BR> 
+Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖고 있으면 몬스터나 플레이어이므로 OutOverlappingActors 배열에 넣어 연쇄 번개 범위에 있는 Actor들을 추출합니다.</BR></BR>
+
+<strong>GetClosestTargets()</strong>함수에서는 OutOverlappingActors 배열에 있는 Actor들을 순회하면서 첫 타격 대상과의 거리를 비교하면서 제일 가까이 있는 타격 대상을 OutAdditionalTargets배열에 넣어줍니다.</BR></BR>
+
+연쇄 번개 대상이 여러명이면 가장 가까운 대상을 구하고 OutOverlappingActors 배열에서 해당 대상을 뺀 후 다시 가장 가까운 대상을 구합니다.</BR>
+
 
 ### [데미지 주기]
 
