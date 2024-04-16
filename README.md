@@ -789,7 +789,6 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 
 		const FGameplayEffectAttributeCaptureDefinition CaptureDef = TagsToCaptureDefs[ResistanceTag];
 
-		// 해당 공격의 데미지
 		float DamageTypeValue = Spec.GetSetByCallerMagnitude(Pair.Key, false);
 		
 		if (DamageTypeValue <= 0.f)
