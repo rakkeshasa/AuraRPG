@@ -1,4 +1,6 @@
 # AuraRPG
+![introduction](https://github.com/rakkeshasa/AuraRPG/assets/77041622/fb21468c-7fc3-4b29-a9c2-cd305ce80184)
+
 Unreal Engine v5.2를 이용한 RPG게임
 </BR>
 
