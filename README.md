@@ -28,8 +28,9 @@ Unreal Engine v5.2를 이용한 RPG게임
 ## 간단한 소개
 ![Example](https://github.com/rakkeshasa/AuraRPG/assets/77041622/46c7c4eb-a558-43c9-9a3a-4f9723c57344)
 
-</BR></BR>
-Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게임입니다.</BR>
+</BR>
+Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게임입니다.</BR></BR>
+
 플레이어는 대마법사 아우라를 컨트롤하여 몬스터들을 잡아 경험치를 얻어 레벨업을 할 수 있습니다.</BR>
 레벨업을 하면 스탯 포인트와 스킬 포인트가 주어지며, 최대 체력과 최대 마나가 늘어납니다.</BR>
 스탯 포인트를 스탯에 투자하면 해당 스탯에 영향받는 능력치가 늘어납니다.(예를 들자면 민첩에 투자하면 크리 확률이 오르거나, 지능에 투자하면 마법 데미지와 마나가 오르는 것이 있습니다.)</BR>
@@ -170,6 +171,7 @@ Spline은 USplineComponent타입으로 두 PathPoint를 부드러운 곡선 경�
 bAutoRunning이 true가 되면 <strong>AutoRun()</strong>에서 Pawn에서 가장 가까운 Spline까지의 위치와 방향벡터를 구하여 해당 방향으로 Pawn이 움직이게 합니다.</BR>
 Pawn이 각 Spline에 도달할 때 마다 목적지인 CachedDestination까지 가까워지며 목적지에 어느정도 가까워지면 더 이상 자동 이동을 안하도록 bAutoRunning을 false로 바꿉니다.</BR></BR>
 
+---
 
 ### [체력 및 마나 구현]
 ```
@@ -234,6 +236,7 @@ Attribute 접근자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attri
 해당 코드에서는 COND_None을 통해 항상 복제가 되도록 하고, REPNOTIFY_Always을 넣어 복제시 항상 서버와 클라에게 알리도록 했습니다.</br></br>
 따라서 체력이나 마나가 변경될 때마다 복제하고 서버와 클라에게 해당 수치가 변경됐다고 알립니다.</br></br>
 
+---
 
 ### [체력 및 마나 UI에 연동시키기]
 
@@ -381,6 +384,7 @@ void UOverlayWidgetController::BindCallbacksToDependencies()
 
 FOnAttributeChangeData에서 변경된 델리게이트의 Attribute값에 바인딩되어 HUD를 업데이트하여 체력창과 마나창에 바뀐 수치에 맞게 체력과 마나가 채워지게 됩니다.</br></br>
 
+---
 
 ### [포션 구현]
 
@@ -468,6 +472,7 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 이후 <strong>PreAttributeChange()</strong>에서 바뀐 수치를 한번 더 클램핑하여 체크하고 해당 수치로 Set을 해줍니다.</BR></BR>
 
+---
 
 ### [스탯 시스템]
 ![1차 스탯](https://github.com/rakkeshasa/AuraRPG/assets/77041622/298898cd-811e-4fcf-9119-801b2902d433)
@@ -547,6 +552,7 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 ![최대체력](https://github.com/rakkeshasa/AuraRPG/assets/77041622/897db214-3066-4e6f-a24a-03c3daa995df)
 <div align="center"><strong>Custom Calculation Class타입을 이용하여 C++클래스 연동해주기</strong></div></BR></BR>
 
+---
 
 ### [FireBolt 스킬]
 
@@ -599,6 +605,8 @@ FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래
 
 애니메이션이 재생하는 도중에 AnimNotify를 통해 Tag를 보냈으며, 해당 Tag를 WaitGameplayEvent노드가 받으면 C++로 구현한 SpawnProjectile()을 이용하여 투사체가 소환됩니다.</BR>
 따라서 애니메이션 중에 태그가 활성화 되고 해당 태그가 활성화 되면 투사체를 월드에 소환하게 됩니다.</BR></BR>
+
+---
 
 ### [Electrocute 스킬]
 ![electrocute](https://github.com/rakkeshasa/AuraRPG/assets/77041622/4c35c530-9d95-4239-ae38-e931dc6498ba)
@@ -695,6 +703,8 @@ Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖
 함수에서 구해준 위치와 Actor를 Electorcute스킬의 GameplayCue파라미터로 만들어 GameplayCue에서 전기 이펙트를 생성할때 입력받은 위치까지 전기가 나가게 하고 
 Actor가 CombatInterface를 가질 경우 Actor의 위치를 구해 전기가 Actor에게 붙게 했습니다.</BR></BR>
 
+---
+
 ### [Arcane Shard 스킬]
 마지막 Arcane Shard 스킬은 바닥에서 커다란 마법 조각이 솟아올라 데미지를 주는 스킬입니다.</BR>
 Arcane Shard스킬에 스킬 포인트를 투자하여 스킬을 강화할 경우 소환되는 마법 조각의 개수가 증가합니다.</BR></BR>
@@ -758,7 +768,7 @@ ImmutablePts를 순회하면서 제일 첫번째 소환 포인트인 PT_0가 아
 LineTraceSingleByProfile()함수를 사용하여 지면과의 충돌 테스트를 진행한 후 해당 지면의 높이를 구하여 땅바닥의 높이(z축)를 구해 포인트의 위치를 조정합니다.</br>
 포인트의 위치를 땅바닥으로 해주고, 솟아나는 방향을 땅바닥의 노말 벡터를 구하여 마법 조각이 무조건 하늘로 향하는 것이 아니라 바닥의 수직 방향에서 솟아오르도록 했습니다.</br></br>
 
-
+---
 
 ### [데미지 주기]
 
@@ -853,6 +863,7 @@ FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const 
 
 <strong>AssignTagSetByCallerMagnitude()</strong>을 사용하여 Spec에 데미지 타입과 데미지 수치 정보를 넣어주고, 맞은 Actor의 ASC는 Spec정보 기반으로 GameEffect를 자기 자신한테 적용합니다.</BR></BR>
 
+---
 
 ### [경험치 시스템]
 
@@ -975,6 +986,7 @@ DeltaLevelRequirement변수는 바뀐 레벨의 경험치 통의 크기를 구�
 ![경험치 통](https://github.com/rakkeshasa/AuraRPG/assets/77041622/4b33bcde-b6a6-4d9a-91dc-441be8e52b01)
 <div align="center"><strong>받은 퍼센트를 경험치 바에 적용하는 모습</strong></div></BR></BR>
 
+---
 
 ### [스탯 창에 Attribute 연동하기]
 ![스탯 미니 창](https://github.com/rakkeshasa/AuraRPG/assets/77041622/ccd566da-7c1d-44e7-bad9-5a40f8e74d70)
