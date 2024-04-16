@@ -1011,3 +1011,24 @@ AttributeInfo구조체의 AttributeValue변수에 현재 Attribute값을 넘겨�
 ![스탯 창 블브](https://github.com/rakkeshasa/AuraRPG/assets/77041622/3a850bc6-4da8-4c77-992d-a85cc90aebed)
 <div align="center"><strong>받은 정보 토대로 텍스트 세팅해주기</strong></div></BR>
 AttributeInfoDelegate을 받으면 현재 AttributeInfo에 있는 태그와 스탯 창의 태그가 같은지 체크하고 같다면 스탯 이름과 스탯 값을 세팅해줍니다.</BR>
+
+
+## 사용한 플러그인
+1. Enhanced Input
+![EnhancedInput](https://github.com/rakkeshasa/AuraRPG/assets/77041622/a74d7cdc-b43f-43a3-b31b-2919b7745357)
+Enhanced Input을 사용하기 위해 적용했습니다.</BR>
+
+2. Motion Warping
+![MotionWarping](https://github.com/rakkeshasa/AuraRPG/assets/77041622/b2ff2695-6c70-4a55-b473-bd6fb14109ac)
+애니메이션 도중 원하는 방향으로 회전할 수 있도록 도와주는 플러그인입니다.</BR>
+
+3. Gameplay Abilities
+![Gameplay Abilities](https://github.com/rakkeshasa/AuraRPG/assets/77041622/7d8291d8-275d-499c-a5d6-fd63bef6ace2)
+복잡한 게임플레이 상호작용을 처리할 수 있는 GameplayEffect 및 GameplayAbility 클래스를 추가해주는 플러그인입니다.</BR>
+
+4. UMG ViewModel
+![MVVM](https://github.com/rakkeshasa/AuraRPG/assets/77041622/1f04733f-a222-4d1d-b421-4dd3e50ad2cd)
+로딩 화면 UI에 MVVM모델을 적용하기 위해 플러그인을 사용했습니다.</BR></BR>
+
+## Reference
+
