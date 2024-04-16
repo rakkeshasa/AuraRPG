@@ -681,6 +681,10 @@ Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖
 
 연쇄 번개 대상이 여러명이면 가장 가까운 대상을 구하고 OutOverlappingActors 배열에서 해당 대상을 뺀 후 다시 가장 가까운 대상을 구합니다.</BR></BR>
 
+![electrocute 블프1](https://github.com/rakkeshasa/AuraRPG/assets/77041622/6a831904-3a83-49cf-91ea-75563951a03f)
+<div align="center"><strong>구해준 위치와 Actor를 GameplayCue의 파라미터로 만들어주기</strong></div></BR>
+함수에서 구해준 위치와 Actor를 Electorcute스킬의 GameplayCue파라미터로 만들어 GameplayCue에서 전기 이펙트를 생성할때 입력받은 위치까지 전기가 나가게 하고 
+Actor가 CombatInterface를 가질 경우 Actor의 위치를 구해 전기가 Actor에게 붙게 했습니다.</BR></BR>
 
 ### [Arcane Shard]
 
