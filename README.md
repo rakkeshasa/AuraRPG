@@ -26,6 +26,7 @@ Unreal Engine v5.2를 이용한 RPG게임
 
 
 ## 간단한 소개
+![Example](https://github.com/rakkeshasa/AuraRPG/assets/77041622/46c7c4eb-a558-43c9-9a3a-4f9723c57344)
 
 </BR></BR>
 Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게임입니다.</BR>
