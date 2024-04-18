@@ -29,11 +29,11 @@ Unreal Engine v5.2를 이용한 RPG게임
 ![Example](https://github.com/rakkeshasa/AuraRPG/assets/77041622/46c7c4eb-a558-43c9-9a3a-4f9723c57344)
 
 </BR>
-Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게임입니다.</BR></BR>
+Unreal 5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG 게임입니다.</BR></BR>
 
 플레이어는 대마법사 아우라를 컨트롤하여 몬스터들을 잡아 경험치를 얻어 레벨업을 할 수 있습니다.</BR>
 레벨업을 하면 스탯 포인트와 스킬 포인트가 주어지며, 최대 체력과 최대 마나가 늘어납니다.</BR>
-스탯 포인트를 스탯에 투자하면 해당 스탯에 영향받는 능력치가 늘어납니다.(예를 들자면 민첩에 투자하면 크리 확률이 오르거나, 지능에 투자하면 마법 데미지와 마나가 오르는 것이 있습니다.)</BR>
+스탯 포인트를 스탯에 투자하면 해당 스탯에 영향받는 능력치가 늘어납니다. (예를 들자면 민첩에 투자하면 크리 확률이 오르거나, 지능에 투자하면 마법 데미지와 마나가 오르는 것이 있습니다.)</BR>
 스킬 포인트는 레벨에 따라 새롭게 열린 스킬에 투자하여 해당 스킬을 해금할 수 있으며, 이미 해금한 스킬에 포인트를 투자하여 데미지나 범위를 늘려 스킬이 한단계 더 업그레이드 할 수 있습니다.
 </BR></BR>
 
@@ -46,11 +46,11 @@ Unreal5에서 지원하는 Gameplay Ability System을 이용하여 만든 RPG게
 ## 기능 구현
 
 ### [플레이어 이동 구현]
-플레이어 이동을 키보드 방식과 마우스 입력 방식 2가지로 구성하였습니다.</BR>
+플레이어 이동을 키보드 입력 방식과 마우스 입력 방식 2가지로 구성하였습니다.</BR>
 키보드 방식은 Enhanced Input을 이용하여 해당 키에 맞는 방향으로 이동합니다.</BR>
 마우스 입력 방식은 마우스가 클릭한 위치를 도착지로 두고 플레이어가 자동으로 이동합니다.</BR></BR>
 
-우선 Enhanced Input을 이용한 키보드 방식부터 살펴보겠습니다.</BR></BR>
+우선 Enhanced Input을 이용한 키보드 입력 방식부터 살펴보겠습니다.</BR></BR>
 
 ![캐릭터 이동](https://github.com/rakkeshasa/AuraRPG/assets/77041622/d827e189-1a24-481f-a355-0e84b307e1d3)
 <div align="center"><strong>Input Mapping Context에 키 값 설정해주기</strong></div></BR>
@@ -97,9 +97,13 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 }
 ```
 <div align="center"><strong>C++코드에서 Enhanced Input설정하기</strong></div></BR>
-<strong>BeginPlay()</strong>에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다. 여기서 AuraContext는 InputMappingContext의 TOjbectPtr로 엔진에서 만든 IMC와 연결할 멤버 변수입니다.</BR></BR>
-<strong>SetupInputComponent()</strong>에서는 이동 관련 입력이 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR></BR>
-<strong>Move()</strong>함수는 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR></BR>
+
+<strong>BeginPlay()</strong>에서 Enhanced Input에서 사용할 IMC(Input Mapping Context)를 연결해줬습니다. 여기서 AuraContext는 InputMappingContext의 TOjbectPtr로 엔진에서 만든 IMC와 연결할 변수입니다.</BR></BR>
+
+<strong>SetupInputComponent()</strong>에서는 이동 관련 입력인 W, A, S, D가 들어오면 Move()함수에 바인딩 시켜 실행해줍니다.</BR></BR>
+
+<strong>Move()</strong>함수는 들어온 키값에 따라 방향 벡터를 구해 캐릭터를 회전시키고, 해당 방향으로 나아가게 합니다.</BR></BR>
+
 
 ```
 void AAuraPlayerController::AbilityInputTagHeld(FGameplayTag InputTag)
@@ -158,15 +162,17 @@ void AAuraPlayerController::AutoRun()
 }
 ```
 <div align="center"><strong>마우스 입력으로 자동 이동하기</strong></div></BR>
-<strong>AbilityInputTagHeld()</strong>는 마우스를 클릭한 위치를 CachedDestination에 저장하고 해당 위치로 Pawn을 이동시키는 역할을 합니다.</BR>
-FollowTime은 마우스 클릭 유지 시간을 체크하며 유지 시간이 ShortPressThreshold보다 작다면 <strong>AbilityInputTagReleased()</strong>에서 경로를 계산해주며, ShortPressThreshold보다 크면 홀딩한 마우스 위치로 Pawn을 이동시킵니다.</BR></BR>
+
+<strong>AbilityInputTagHeld()</strong>는 마우스를 클릭한 위치를 CachedDestination에 저장하고 Pawn을 해당 위치로 이동을 시작시키는 역할을 합니다.</BR>
+FollowTime은 마우스 클릭 유지 시간을 체크하며 유지 시간이 ShortPressThreshold보다 작다면 마우스 클릭을 뗄 시 호출되는 <strong>AbilityInputTagReleased()</strong>에서 경로를 계산해주며, ShortPressThreshold보다 크면 홀딩한 마우스 위치로 Pawn을 이동시킵니다.</BR></BR>
 
 <strong>AbilityInputTagReleased()</strong>에서는 <strong>FindPathToLocationSynchronously()</strong>함수를 이용하여 현재 Pawn의 위치와 마우스로 클릭한 위치까지의 경로를 구해줬습니다.</BR></BR>
+
 PathPoint는 NavPath에 저장된 경로의 각 지점을 나타내며 각 PathPoint를 Spline에 넣어주고 있습니다.</BR>
 Spline은 USplineComponent타입으로 두 PathPoint를 부드러운 곡선 경로로 표현하여 코너에서 Pawn이 부자연스럽게 회전하는 것을 방지하였습니다.</BR></BR>
 
-bAutoRunning이 true가 되면 <strong>AutoRun()</strong>에서 Pawn에서 가장 가까운 Spline까지의 위치와 방향벡터를 구하여 해당 방향으로 Pawn이 움직이게 합니다.</BR>
-Pawn이 각 Spline에 도달할 때 마다 목적지인 CachedDestination까지 가까워지며 목적지에 어느정도 가까워지면 더 이상 자동 이동을 안하도록 bAutoRunning을 false로 바꿉니다.</BR></BR>
+bAutoRunning이 true가 되면 <strong>AutoRun()</strong>에서 캐릭터에서 가장 가까운 Spline까지의 위치와 방향벡터를 구하여 해당 방향으로 캐릭터가 움직이게 합니다.</BR>
+캐릭터가 각 Spline에 도달할 때 마다 목적지인 CachedDestination까지 가까워지며 목적지에 어느정도 가까워지면 더 이상 자동 이동을 안하도록 bAutoRunning을 false로 바꿉니다.</BR></BR>
 
 ---
 
@@ -227,10 +233,13 @@ void UAuraAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana) 
 
 ```
 Attribute 접근자인 ATTRIBUTE_ACCESSORS매크로를 사용하여 각종 Attribute에 대한 GET함수와 SET함수를 자동으로 생성했습니다.</br></br>
-체력과 마나의 Attribute는 Blueprint읽기 전용과 Replicated속성으로 만듬과 동시에 네트워크 복제시 상응되는 함수가 호출되도록 했습니다.</br></br>
+
+체력과 마나의 Attribute는 Blueprint읽기 전용과 Replicated속성으로 만듬과 동시에 네트워크 복제시 바인딩 된 함수가 호출되도록 했습니다.</br></br>
+
 <strong>GetLifetimeReplicatedProps()</strong>에서는 Replicated할 Attribute를 등록하여 복제할 프로퍼티 정보를 추가했습니다.</br>
 각 속성마다 <strong>DOREPLIFETIME_CONDITION_NOTIFY()</strong>를 통하여 프로퍼티의 복제 조건과 알림을 설정하였습니다.</br>
 해당 코드에서는 COND_None을 통해 항상 복제가 되도록 하고, REPNOTIFY_Always을 넣어 복제시 항상 서버와 클라에게 알리도록 했습니다.</br></br>
+
 따라서 체력이나 마나가 변경될 때마다 복제하고 서버와 클라에게 해당 수치가 변경됐다고 알립니다.</br></br>
 
 ---
@@ -414,7 +423,8 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 }
 ```
 <div align="center"><strong>Target에게 Gameplay Effect 적용시키기</strong></div></BR>
-<strong>ApplyEffectToTarget()</strong>에서는 포션이 플레이어와 충돌할 시 Gameplay Effect를 플레이어에게 적용시키게 했습니다.</br></br>
+
+<strong>ApplyEffectToTarget()</strong>에서는 포션이 플레이어와 충돌할 시 Gameplay Effect를 플레이어에게 적용하게 했습니다.</br></br>
 
 <strong>Gameplay Effect(GE)</strong>는 <strong>GE Context</strong>와 <strong>GE Spec</strong>으로 2가지 데이터로 구성되어 있습니다.</br>
 <strong>Gameplay Ability System(GAS)</strong>는 두 데이터를 직접 제어하는게 아니라 <strong>Handle</strong>을 통해 데이터를 제어합니다.</br></br>
@@ -435,7 +445,7 @@ void UAuraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
-	if (Attribute == GetHealthAttribute()) // health 속성인지, ATTRIBUTE_ACCESSOR제공
+	if (Attribute == GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxHealth());
 	}
@@ -472,8 +482,15 @@ void UAuraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 ---
 
 ### [스탯 시스템]
+스탯은 1차 스탯 4종과 여러 개의 2차 스탯이 있습니다.</BR>
+2차 스탯은 1차 스탯에 영향을 받으며 1차 스탯이 오르면 해당 1차 스탯에 영향받는 2차 스탯도 오르게 됩니다.</BR></BR>
+
 ![1차 스탯](https://github.com/rakkeshasa/AuraRPG/assets/77041622/298898cd-811e-4fcf-9119-801b2902d433)
 <div align="center"><strong>Gameplay Effect로 기본 스탯 만들어주기</strong></div></BR>
+
+1차 스탯 속성에 적용된 GameplayEffect(GE)입니다.</BR>
+1차 스탯은 게임 시작과 동시에 캐릭터에게 적용되어야 하므로 Duration 타입을 Instant로 하여
+1차 스탯에 GE가 즉각적으로 적용되게 했습니다.
 
 ```
 void AAuraCharacterBase::ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level) const
@@ -493,12 +510,14 @@ void AAuraCharacterBase::InitializeDefaultAttributes() const
 }
 ```
 <div align="center"><strong>GE 자기 자신한테 적용하기</strong></div></BR>
-체력과 마나와 같이 기본 스탯을 Attribute로 생성해주고 해당 Attribute를 GE에 세팅을 해줬습니다.</BR></BR>
+
+체력과 마나와 같이 1차 스탯을 Attribute로 생성해주고 해당 Attribute를 GE에 세팅을 해줬습니다.</BR></BR>
 <strong>ApplyEffectToSelf()</strong>함수는 AuraCharacterBase클래스에 속해있으므로 AddSourceObject(this)를 통해 Source도 Target도 자기 자신으로 해서 GE에 포함된 Attribute가 자신한테 적용되도록 했습니다.</BR></BR>
 
 ![부가 스탯](https://github.com/rakkeshasa/AuraRPG/assets/77041622/5c63adf1-ee0b-4a05-b6c9-750de92a6c0c)
 <div align="center"><strong>1차 스탯에 영향받는 2차 스탯</strong></div></BR>
-MaxHealth와 MasMana를 제외한 2차 스탯의 Attribute는 <strong>Magnitue Calculation Type</strong>을 <strong>Attribute Based</strong>로 설정하여 1차 스탯에 연산을 한 결과값을 가지도록 했습니다.</BR>
+
+MaxHealth와 MasMana를 제외한 2차 스탯은 <strong>Magnitue Calculation Type</strong>을 <strong>Attribute Based</strong>로 설정하여 1차 스탯에 연산을 한 결과값을 가지도록 했습니다.</BR>
 1차 스탯이 바뀌면 2차 스탯이 바뀐 후 계속 유지되어야 하므로 Duration Policy를 <strong>Infinite</strong>로 설정했습니다.</BR></BR>
 
 ```
@@ -535,6 +554,7 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 }
 ```
 <div align="center"><strong>최대 체력과 최대 마나 연산하기</strong></div></BR>
+
 최대 체력과 최대 마나의 경우에는 1차 스탯뿐만 아니라 플레이어가 레벨업 할 때마다 수치를 늘려주고자 다른 연산 타입을 사용했습니다.</BR>
 최소 2가지 이상의 요소가 Attribute 값을 결정하기에 따로 C++클래스로 만들었습니다.</BR></BR>
 
@@ -552,6 +572,7 @@ float UMMC_MaxHealth::CalculateBaseMagnitude_Implementation(const FGameplayEffec
 ---
 
 ### [FireBolt 스킬]
+파이어 볼트 스킬은 불덩이를 소환하여 상대에게 던지는 기술입니다.</BR></BR>
 
 ![불덩이](https://github.com/rakkeshasa/AuraRPG/assets/77041622/313f66b1-658f-4efa-be34-925ec0a91f7e)
 <div align="center"><strong>FireBolt스킬에 쓸 투사체인 불덩이</strong></div></BR>
@@ -582,18 +603,20 @@ void UAuraProjectileSpell::SpawnProjectile(const FVector& ProjectileTargetLocati
 }
 ```
 <div align="center"><strong>투사체 소환시키기</strong></div></BR>
+
 <strong>SpawnProjectile()</strong>은 투사체를 소환시키는 함수로 FireBolt스킬에 쓰일 불덩이를 소환하는데 사용됩니다.</br></br>
 
 우선 불덩이가 플레이어의 지팡이에서 나갈 수 있도록 지팡이의 위치를 구하고 나아갈 방향을 구합니다.</br>
+구해준 위치와 방향은 Transform타입의 SpawnTransform변수에 넣어줍니다.</br>
 이후 <strong>SpawnActorDeferred()</strong>을 이용하여 해당 투사체의 인스턴스를 생성합니다.</br></br>
 
 <strong>ProjectileClass</strong>에는 불덩이 클래스가 들어갈 것이며 이는 엔진상에서 BP_FireBolt로 만들었습니다.</br>
 <strong>SpawnTransform</strong>에는 위에서 구한 지팡이의 위치와 나아갈 방향이 들어있습니다.</br></br>
 
-생성이 완료된 후 투사체가 데미지관련 정보를 위해 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>함수를 통하여 FDamageEffectParams 구조체의 변수에 값을 채우고 해당 구조체를 return합니다.</br>
+투사체인 불덩이가 소환되기 전에 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>함수를 통하여 불덩이에 미리 데미지관련 정보를 생성하여 FDamageEffectParams 구조체의 변수에 값을 채우고 해당 구조체를 return합니다.</br>
 FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래스, SourceASC, TargetASC, Damage등의 변수가 있습니다.</br></br>
 
-<strong>FinishSpawning()</strong>을 호출하여 투사체를 월드에서 지정된 위치에 소환합니다.</br></br>
+<strong>FinishSpawning()</strong>을 호출하여 투사체를 월드에서 지정된 위치에 소환하고 구해준 방향으로 나아가게 합니다..</br></br>
 
 ![FireBolt](https://github.com/rakkeshasa/AuraRPG/assets/77041622/f5c65931-cb2a-4465-94e1-fc7d2d43a905)
 <div align="center"><strong>스킬 모션 중 AnimNotify로 이벤트를 받은 후 SpawnProjectile호출</strong></div></BR>
@@ -606,6 +629,8 @@ FDamageEffectParams 구조체에는 데미지 계산을 할 GameplayEffect클래
 ---
 
 ### [Electrocute 스킬]
+감전 스킬은 마우스 위치에 전기를 뻗어 나가게 해 데미지를 줍니다.</BR></BR>
+
 ![electrocute](https://github.com/rakkeshasa/AuraRPG/assets/77041622/4c35c530-9d95-4239-ae38-e931dc6498ba)
 <div align="center"><strong>마우스 위치에 빔을 쏘는 스킬</strong></div></BR>
 
@@ -635,7 +660,7 @@ void UAuraBeamSpell::TraceFirstTarget(const FVector& BeamTargetLocation)
 }
 ```
 <div align="center"><strong>마우스 위치와 Actor구하기</strong></div></BR>
-<strong>TraceFirstTarget()</strong>는 마우스 위치를 입력으로 받고 지팡이에서 마우스까지 <strong>SphereTraceSingle()</strong>를 통해 충돌 검사를 합니다.</br>
+<strong>TraceFirstTarget()</strong>는 마우스 위치를 입력으로 받고 지팡이에서 마우스 위치까지 <strong>SphereTraceSingle()</strong>를 통해 충돌 검사를 합니다.</br>
 충돌 검사 결과는 HitResult에 들어가게 되고 충돌하게 된 경우에는 해당 위치와 위치에 있는 Actor를 저장합니다.</br></br>
 
 ```
@@ -685,11 +710,13 @@ void UAuraAbilitySystemLibrary::GetLivePlayersWithinRadius(const UObject* WorldC
 }
 ```
 <div align="center"><strong>첫 타격 대상의 주변 대상 찾기</strong></div></BR>
-Electrocute 스킬은 레벨업을 하면 타격하는 대상 수가 늘어납니다.</BR></BR> 
+감전 스킬은 레벨업을 하면 타격하는 대상 수가 늘어납니다.</BR></BR> 
 
-연쇄 번개를 맞는 대상은 우선 첫 타격 대상에서 범위 내에 있어야 하며, 그 중 가장 가까이 있는 대상에게 연쇄 번개가 나갑니다.</BR> 
+연쇄 번개를 맞는 대상은 먼저 첫 타격 대상에서 연쇄 번개 범위 내에 있어야 하며, 그중 가장 가까이 있는 대상에게 연쇄 번개가 나갑니다.</BR> 
 <strong>GetLivePlayersWithinRadius()</strong>함수에서 OverlapMultiByObjectType()를 사용하여 연쇄 번개 범위 내에 있는 오브젝트를 찾은 후 Overlaps에 저장합니다.</BR> 
-Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖고 있으면 몬스터나 플레이어이므로 OutOverlappingActors 배열에 넣어 연쇄 번개 범위에 있는 Actor들을 추출합니다.</BR></BR>
+Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖고 있는지와 살아있는지 체크합니다.</BR>
+CombatInterface는 몬스터나 플레이어만이 가지고 있으므로 땅이나 벽과 같은 오브젝트들은 걸러집니다.</br>
+걸러진 오브젝트들을 OutOverlappingActors 배열에 넣어 연쇄 번개 범위에 있는 플레이어나 몬스터들을 추출합니다.</BR></BR>
 
 <strong>GetClosestTargets()</strong>함수에서는 OutOverlappingActors 배열에 있는 Actor들을 순회하면서 첫 타격 대상과의 거리를 비교하면서 제일 가까이 있는 타격 대상을 OutAdditionalTargets배열에 넣어줍니다.</BR></BR>
 
@@ -697,14 +724,15 @@ Overlaps의 요소들을 순회하면서 해당 요소가 CombatInterface를 갖
 
 ![electrocute 블프1](https://github.com/rakkeshasa/AuraRPG/assets/77041622/6a831904-3a83-49cf-91ea-75563951a03f)
 <div align="center"><strong>구해준 위치와 Actor를 GameplayCue의 파라미터로 만들어주기</strong></div></BR>
+
 함수에서 구해준 위치와 Actor를 Electorcute스킬의 GameplayCue파라미터로 만들어 GameplayCue에서 전기 이펙트를 생성할때 입력받은 위치까지 전기가 나가게 하고 
 Actor가 CombatInterface를 가질 경우 Actor의 위치를 구해 전기가 Actor에게 붙게 했습니다.</BR></BR>
 
 ---
 
 ### [Arcane Shard 스킬]
-마지막 Arcane Shard 스킬은 바닥에서 커다란 마법 조각이 솟아올라 데미지를 주는 스킬입니다.</BR>
-Arcane Shard스킬에 스킬 포인트를 투자하여 스킬을 강화할 경우 소환되는 마법 조각의 개수가 증가합니다.</BR></BR>
+마지막 아케인 샤드 스킬은 바닥에서 커다란 마법 조각이 솟아올라 데미지를 주는 스킬입니다.</BR>
+아케인 샤드 스킬은 스킬 포인트를 투자하여 스킬을 강화할 경우 소환되는 마법 조각의 개수가 증가합니다.</BR></BR>
 
 ![ArcaneShard](https://github.com/rakkeshasa/AuraRPG/assets/77041622/e379e54a-16d2-4c6e-8fc0-68ab77bd69a6)
 <div align="center"><strong>강화된 Arcane Shard스킬</strong></div></BR>
@@ -754,10 +782,10 @@ TArray<USceneComponent*> APointCollection::GetGroundPoints(const FVector& Ground
 ```
 <div align="center"><strong>마법 조각들이 소환될 포인트의 위치 계산해주기</strong></div></BR>
 
-<strong>GetGroundPoints()</strong>는 미리 지정한 포인트를 첫번째 소환된 포인트 위치에서 거리와 방향을 계산하여 소환할 위치를 알려줍니다.</br></br>
+<strong>GetGroundPoints()</strong>는 다음 마법 조각이 소환될 포인트를 첫번째 소환된 포인트 위치에서 거리와 방향을 계산하여 소환할 위치를 계산합니다.</br></br>
 
 ImmutablePts는 미리 지정한 포인트로 총 10개의 포인트를 지정했으며, 최대 10개의 조각이 소환될 수 있습니다.</br>
-ImmutablePts를 순회하면서 제일 첫번째 소환 포인트인 PT_0가 아니라면 포인트의 위치를 다음 포인트로 세팅해줍니다.</br></br>
+ImmutablePts를 순회하면서 제일 첫번째 소환 포인트인 PT_0가 아니라면 포인트의 위치를 다음 포인트로 세팅하여 다음으로 소환될 마법 조각의 위치를 세팅합니다.</br></br>
 
 마법 조각들은 지면에서 생성 되기 때문에 지면에 경사가 있을 경우를 대비하여 경사가 낮은 곳과 경사가 높은 곳을 미리 지정합니다.</br>
 또한 마법 조각들이 지면이 아닌 Actor의 머리 위에 소환되면 안되기 때문에 GetLivePlayersWithinRadius()함수를 통하여 CombatInterface를 가지고 있는 Actor를 충돌테스트에서 제외시켜줍니다.</br>
@@ -770,7 +798,7 @@ LineTraceSingleByProfile()함수를 사용하여 지면과의 충돌 테스트�
 ### [데미지 주기]
 
 1차적으로 투사체가 소환될때 <strong>MakeDamageEffectParamsFromClassDefaults()</strong>를 통하여 FDamageEffectParams 구조체에 변수가 채워지는데
-해당 구조체 내에 있는 GameplayEffect클래스의 변수가 ExecCalc_Damage클래스로 세팅이 되어있습니다.</br></br>
+FDamageEffectParams 구조체 내에 있는 GameplayEffect클래스의 변수의 값이 ExecCalc_Damage클래스로 세팅이 되어있습니다.</br></br>
 
 ExecCalc_Damage클래스는 투사체가 입힐 데미지를 계산하는 클래스입니다.</br></br>
 
@@ -820,7 +848,8 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 
 얻어온 저항치는 Resistance에 넣어주고 0~100사이의 수로 클램핑해주고 해당 퍼센트만큼 데미지를 빼줍니다.</BR></BR>
 
-이후 부가 스탯인 TargetBlockChance의 속성값을 구해 막히면 위에서 구해준 데미지에서 절반을 빼주고, 막히지 않으면 본래 데미지를 줍니다.</BR></BR>
+저항치에 따른 퍼센트 연산 후 데미지에 더해주고, 부가 스탯인 TargetBlockChance의 속성값에 따른 데미지 연산을 해줍니다.</br>
+TargetBlockChance는 공격을 막을 확률을 나타내는 속성으로 막히면 위에서 구해준 데미지에서 절반을 빼주고, 막히지 않으면 본래 데미지를 줍니다.</BR></BR>
 
 ```
 void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -853,15 +882,21 @@ FGameplayEffectContextHandle UAuraAbilitySystemLibrary::ApplyDamageEffect(const 
 <div align="center"><strong>투사체 충돌 시 데미지 주기</strong></div></BR>
 스킬로 날린 투사체가 물체에 부딪히면 <strong>OnSphereOverlap()</strong>함수가 호출됩니다.</BR></BR>
 
-투사체를 날린 Actor가 맞으면 return하고 다른 Actor가 맞았다면 상대의 ASC를 데미지 관련 정보가 들어있는 DamageEffectParams 구조체에 넣고 해당 구조체를 ApplyDamageEffect()에 넣어 호출합니다.
+투사체를 날린 Actor가 맞으면 return하고 다른 Actor가 맞았다면 상대의 ASC를 DamageEffectParams 구조체에 넣고 해당 구조체를 ApplyDamageEffect()에 넣어 호출합니다.
 
-<strong>ApplyDamageEffect()</strong>에서는 GE Context Handle과 GE Spec Handle을 DamageEffectParams구조체 정보 기반으로 생성하여 ASC가 GE에 접근할 수 있도록 해줍니다.</BR></BR>
+<strong>ApplyDamageEffect()</strong>에서는 GE Context Handle과 GE Spec Handle을 DamageEffectParams구조체 정보 기반으로 생성하고, 생성한 Handle을 통하여 ASC가 GE에 접근할 수 있도록 해줍니다.</BR></BR>
 
 <strong>AssignTagSetByCallerMagnitude()</strong>을 사용하여 Spec에 데미지 타입과 데미지 수치 정보를 넣어주고, 맞은 Actor의 ASC는 Spec정보 기반으로 GameEffect를 자기 자신한테 적용합니다.</BR></BR>
 
 ---
 
 ### [경험치 시스템]
+경험치(XP)는 PlayerState 클래스에 있는 변수입니다.
+따라서 경험치는 Attribute가 아니기 때문에 태그를 통하여 GameplayEffect(GE)를 적용하여 XP 값을 늘릴 수 없습니다.</br></br>
+
+대신 IncomingXP라는 메타 속성을 생성하여 획득한 경험치를 얻어와 XP변수에 넣도록 설계했습니다. </br>
+메타 속성은 다른 속성들을 설정하기 위한 임시적인 속성으로 리플리케이션에서 제외되고 다른 속성을 설정한 이후에는 0으로 세팅해 줍니다.</br></br>
+
 
 ```
 void UAuraAttributeSet::SendXPEvent(const FEffectProperties& Props)
@@ -888,23 +923,28 @@ void UAuraAttributeSet::SendXPEvent(const FEffectProperties& Props)
 }
 ```
 <div align="center"><strong>몬스터가 죽으면 Gameplay Event 발생시키기</strong></div></BR>
-<strong>SendXPEvent()</strong>함수는 몬스터가 죽으면 발동되는 함수로 몬스터의 타입과 레벨을 구하여 해당 정보 토대로 XP수치를 구해옵니다.</BR></BR>
+
+<strong>SendXPEvent()</strong>함수는 몬스터가 죽으면 발동되는 함수로 몬스터의 타입과 레벨을 구한 뒤, 보내줄 이벤트의 데이터에 담아 플레이어에게 이벤트를 보냅니다.</BR></BR>
 
 XP수치를 구할 때 사용하는 <strong>GetXPRewardForClassAndLevel()</strong>함수는 몬스터 타입(근거리, 원거리, 마법사)마다 주어진 XP를 찾아서 return해줍니다.</BR>
-Payload에는 이벤트에 사용할 정보들인 태그와 XP수치를 넣어 Gameplay Event가 발생하면 사용할 수 있게 합니다.</BR>
-<strong>SendGameplayEventToActor()</strong>함수를 이용하여 XP를 받는 쪽으로 이벤트를 발생시킬 Tag와 Payload를 담아 Gameplay Event를 보냅니다. </BR></BR>
+Payload에는 이벤트에 사용할 정보들인 태그와 XP수치를 넣어 Gameplay Event가 발생하면 Payload 정보를 사용할 수 있게 합니다.</BR>
+<strong>SendGameplayEventToActor()</strong>함수를 이용하여 몬스터를 잡는 플레이어에게 이벤트를 발생시킬 Tag와 Payload를 담아 Gameplay Event를 보냅니다. </BR></BR>
 
 ![경험치 블프1](https://github.com/rakkeshasa/AuraRPG/assets/77041622/a1e6a82c-86d9-43c2-a2e6-9d8b0c3efd51)
 <div align="center"><strong>Gameplay Event받아오기</strong></div></BR>
+
 WaitGameplayEvent노드를 이용하여 'Attributes'태그를 루트로 하는 하위 태그들이 올 때 Gameplay Event를 받습니다.</BR>
 C++코드에서는 'Attributes_Meta_IncomingXP'로 태그를 넘겨줬기 때문에 해당 태그는 Attributes의 자식 태그이므로 Gameplay Event가 발생합니다.</BR></BR>
 
-MakeOutgoingSpec노드를 이용하여 XP속성이 담긴 GE를 조작할 수 있도록 해줍니다.</BR></BR>
+MakeOutgoingSpec노드를 이용하여 ASC가 IncomingXP 메타 속성과 연결된 GE를 조작할 수 있도록 해줍니다.</BR></BR>
 
 ![경험치 블프2](https://github.com/rakkeshasa/AuraRPG/assets/77041622/df71c5e8-2215-4585-b55a-ebcaad92dc2e)
 <div align="center"><strong>받은 이벤트 토대로 자기 자신한테 GE적용해주기</strong></div></BR>
-XP속성의 Magnitude계산 타입은 'Set by Caller'로 계산을 하여 수치를 구하는게 아니라 해당 속성에 넣어준 값만큼 받아서 연산을 해줍니다.</BR></BR>
-AssignTagSetbyCallerMagnitude노드를 사용하여 XP속성 값에 몬스터를 잡고 넘어온 XP값을 넘겨주고 GE에서는 넘어온 XP값만큼 더하여 ApplyGameEffectSpecToSelf노드를 이용하여 자신한테 해당 GE를 적용시켜줍니다.</BR></BR>
+
+IncomingXP속성의 Magnitude계산 타입은 'Set by Caller'로 계산을 하여 수치를 구하는게 아니라 넘겨준 값만큼 받아서 연산을 해줍니다.</BR></BR>
+
+AssignTagSetbyCallerMagnitude노드를 사용하여 IncomingXP속성 값에 몬스터를 잡고 넘어온 XP값을 넘겨주고 해당 정보를 Spec에 넣어줍니다.</BR>
+ApplyGameEffectSpecToSelf노드를 이용하여 ASC는 Spec정보를 바탕으로 자신한테 GE를 적용시켜 메타 속성인 IncomingXP값을 바꿔줍니다.</BR></BR>
 
 ```
 void UAuraAttributeSet::HandleIncomingXP(const FEffectProperties& Props)
@@ -950,12 +990,14 @@ void AAuraPlayerState::AddToXP(int32 InXP)
 	OnXPChangedDelegate.Broadcast(XP);
 }
 ```
-<div align="center"><strong>XP속성을 가지는 GE가 적용된 후에 호출되는 함수</strong></div></BR>
+<div align="center"><strong>IncomingXP속성과 연결된 GE가 적용된 후에 호출되는 함수</strong></div></BR>
 
-<strong>HandleIncomingXP()</strong>는 PostGameplayEffectExecute()에서 호출되는 함수로 위에서 언급한 XP속성 값이 바뀌는 GE를 적용 후에 호출됩니다.</BR></BR>
-현재 레벨과 XP를 구해온 뒤 현재XP에 몬스터를 잡고 얻은 XP를 더해준 XP값의 총량을 계산하여 현재 XP값의 총량이 어느 레벨인지 계산해줍니다.</BR>
-새롭게 구한 레벨과 현재 레벨을 빼서 얼마만큼 레벨을 올려야하는지 구한 후 올려야하는 레벨 만큼 스탯 포인트, 스킬 포인트를 올리고 모든 자원(체력, 마나)를 회복시켜줍니다.</BR>
-이후에는 레벨업과 XP를 증가시키면서 연결된 델리게이트인 OnLevelChangedDelegate와 OnXPChangedDelegate를 브로드캐스팅합니다.</BR></BR>
+<strong>HandleIncomingXP()</strong>는 PostGameplayEffectExecute()에서 호출되는 함수로 IncomingXP 속성 값이 바뀌는 GE를 적용 후에 호출됩니다.</BR></BR>
+
+아직 몬스터를 잡고 얻은 IncomingXP가 적용되지 않은 현재 XP를 구해온 뒤 몬스터를 잡고 얻은 IncomingXP를 더해주고, 바뀐 XP가 어느 레벨인지 계산해줍니다.</BR>
+새롭게 구한 레벨과 현재 레벨을 빼서 얼마만큼 레벨을 올려야하는지 구한 후 올려야하는 레벨 만큼 스탯 포인트, 스킬 포인트를 플레이어에게 부여하고 모든 자원(체력, 마나)을 회복시켜주기 위해 flag 타입 변수를 true로 설정해 다른 함수에서 처리하도록 합니다.</BR></BR>
+
+이후에는 인터페이스 함수인 LevelUp()과 AddtoXP()를 호출하여 PlayerState클래스의 변수인 Level과 XP의 값을 늘리고, 델리게이트인 OnLevelChangedDelegate와 OnXPChangedDelegate를 브로드캐스팅합니다.</BR></BR>
 
 ```
 void UOverlayWidgetController::OnXPChanged(int32 NewXP)
@@ -981,9 +1023,11 @@ void UOverlayWidgetController::OnXPChanged(int32 NewXP)
 }
 ```
 <div align="center"><strong>OnXPChangedDelegate와 바인딩 된 함수</strong></div></BR>
-XP가 바뀌면 UI상에서 레벨을 올려주고 경험치 바를 변경해주기 위해 브로드캐스팅합니다.</BR>
+
+<strong>OnXPChanged()</strong>함수는 XP바에 쓰일 XP의 비율을 계산하고 브로드캐스팅해줍니다.</BR></BR>
+
 DeltaLevelRequirement변수는 바뀐 레벨의 경험치 통의 크기를 구하고, XPForThisLevel변수는 바뀐 XP총량에서 이전 레벨까지의 경험치 통의 총량을 빼서 현재 레벨에서 얼마만큼의 XP를 채웠는지를 나타냅니다.</BR>
-현재 레벨에서 채운 XP/현재 레벨의 경험치 통을 연산하여 경험치 바에 나타낼 퍼센트를 구해 브로드캐스팅해줍니다.</BR></BR>
+현재 레벨에서 채운 XP를 현재 레벨의 경험치 통으로 나눠 경험치 바에 나타낼 퍼센트를 구해 브로드캐스팅해줍니다.</BR></BR>
 
 ![경험치 통](https://github.com/rakkeshasa/AuraRPG/assets/77041622/4b33bcde-b6a6-4d9a-91dc-441be8e52b01)
 <div align="center"><strong>받은 퍼센트를 경험치 바에 적용하는 모습</strong></div></BR></BR>
